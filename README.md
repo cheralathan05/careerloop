@@ -1,13 +1,8 @@
-# CareerLoop
+# CareerLoop Authentication Module
 
-CareerLoop is a career networking web app built with **React + Vite** and **Firebase Authentication**.  
-It allows users to sign up, log in, and securely access protected routes using various authentication methods.
+This directory contains the complete authentication system for CareerLoop, including email/password login, Google login, phone authentication, password reset, authentication context, and route protection.
 
 ---
 
-## 🚀 Setup
+## 📂 File Structure
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/cheralathan05/careerloop.git
-   cd careerloop
