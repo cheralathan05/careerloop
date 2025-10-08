@@ -1,15 +1,23 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import AuthLoader from "./AuthLoader";
+// src/components/auth/PrivateRoute.jsx
 
-const PrivateRoute = ({ children }) => {
-  const { user, loading } = useAuth();
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 
-  if (loading) return <AuthLoader />;
-  if (!user) return <Navigate to="/login" replace />;
+/**
+ * Protects routes, redirecting unauthenticated users to the login page.
+ * Uses the <Outlet /> component from React Router to render child routes.
+ */
+const PrivateRoute = () => {
+    const { currentUser, loading } = useAuth();
 
-  return children;
+    if (loading) {
+        // Render a full-page loader while the auth state is being checked
+        return <div className="min-h-screen flex items-center justify-center text-xl">Loading User Data...</div>; 
+    }
+
+    // If a user is logged in, render the child route
+    return currentUser ? <Outlet /> : <Navigate to="/auth/login" replace />;
 };
 
 export default PrivateRoute;

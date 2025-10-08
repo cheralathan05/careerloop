@@ -1,19 +1,12 @@
-import { useEffect, useState } from "react";
-import { auth } from "../firebase/firebase"; // ✅ Match file name
-import { onAuthStateChanged } from "firebase/auth";
+// src/hooks/useAuth.js
+
+import { 
+    useContext 
+} from 'react';
+import { 
+    AuthContext 
+} from '../context/AuthContext';
 
 export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  return { user, loading };
+    return useContext(AuthContext);
 };

@@ -1,17 +1,23 @@
-import React from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
-import AuthLoader from "./AuthLoader";
+// src/components/auth/AuthWrapper.jsx
 
-const AuthWrapper = ({ children, requireAuth = true }) => {
-  const { user, loading } = useAuth();
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import AuthLoader from './AuthLoader';
 
-  if (loading) return <AuthLoader />;
+/**
+ * Ensures that only UNauthenticated users can access the route.
+ * Redirects authenticated users to the dashboard.
+ */
+const AuthWrapper = () => {
+    const { currentUser, loading } = useAuth();
 
-  if (requireAuth && !user) return <Navigate to="/login" replace />;
-  if (!requireAuth && user) return <Navigate to="/dashboard" replace />;
+    if (loading) {
+        return <AuthLoader />;
+    }
 
-  return <>{children}</>;
+    // If the user is logged in, redirect them away from auth pages
+    return currentUser ? <Navigate to="/dashboard" replace /> : <Outlet />;
 };
 
 export default AuthWrapper;

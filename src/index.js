@@ -1,16 +1,13 @@
+// src/index.js
+
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import App from './App';
-import './index.css';
-import './firebase/firebase';
+import './index.css'; // Import global Tailwind CSS styles
 
-// Firebase initialization (if you have Firebase integration)
-import './firebase/firebase';
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-
-root.render(
+ReactDOM.render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
+  document.getElementById('root')
 );

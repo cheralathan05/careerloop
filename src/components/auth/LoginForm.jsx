@@ -1,95 +1,93 @@
-import { useState } from "react";
-import { login, resetPassword } from "../../firebase/authService";
-import { useNavigate } from "react-router-dom";
+// src/components/auth/LoginForm.jsx
+
+import React, { 
+    useState 
+} from 'react';
+import { 
+    useAuth 
+} from '../../hooks/useAuth';
+import { 
+    useNavigate 
+} from 'react-router-dom';
 
 const LoginForm = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
+    const { 
+        login 
+    } = useAuth();
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        
+        // Basic validation (use utils/validators.js for full implementation)
+        if (!email || !password) {
+            setError('Please fill in both fields.');
+            return;
+        }
 
-    try {
-      const { user, error: authError } = await login(email, password);
-      if (user) navigate("/dashboard");
-      else setError(authError || "Invalid credentials.");
-    } catch {
-      setError("Unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        try {
+            await login(email, password);
+            navigate('/dashboard'); // Redirect to dashboard on success
+        } catch (err) {
+            setError('Failed to log in. Check your email and password.');
+            console.error(err);
+        }
+    };
 
-  const handleResetPassword = async () => {
-    if (!email) {
-      setError("Please enter your email to reset password.");
-      return;
-    }
-    try {
-      const { success, error: resetError } = await resetPassword(email);
-      if (success) alert("Password reset email sent!");
-      else setError(resetError || "Failed to send reset email.");
-    } catch {
-      setError("Unexpected error during reset.");
-    }
-  };
+    return (
+        <form onSubmit={handleSubmit} className="p-8 bg-white rounded-lg shadow-xl w-full max-w-md">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800">Sign In</h2>
+            
+            {error && (
+                <p className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+                    {error}
+                </p>
+            )}
 
-  return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white shadow-md rounded space-y-6">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+            <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
+                    Email
+                </label>
+                <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="you@example.com"
+                    required
+                />
+            </div>
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+            <div className="mb-6">
+                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="password">
+                    Password
+                </label>
+                <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="********"
+                    required
+                />
+            </div>
 
-      {error && (
-        <p className="text-red-600 bg-red-50 p-2 rounded text-sm">{error}</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className={`w-full py-2 px-4 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50`}
-      >
-        {loading ? "Logging in..." : "Log In"}
-      </button>
-
-      <button
-        type="button"
-        onClick={handleResetPassword}
-        className="w-full mt-2 text-sm text-blue-600 hover:underline"
-      >
-        Forgot Password?
-      </button>
-    </form>
-  );
+            <div className="flex items-center justify-between">
+                <button
+                    type="submit"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out w-full"
+                >
+                    Log In
+                </button>
+            </div>
+        </form>
+    );
 };
 
 export default LoginForm;

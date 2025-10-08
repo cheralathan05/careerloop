@@ -1,61 +1,26 @@
-import { useState } from "react";
-import { signUpWithEmail } from "../../firebase/authService";
-import { useNavigate } from "react-router-dom";
+// src/pages/auth/SignUpPage.jsx
 
-const SignUpForm = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+import React from 'react';
+import { Link } from 'react-router-dom';
+import SignUpForm from '../../components/auth/SignUpForm';
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const { user, error: authError } = await signUpWithEmail(email, password);
-      if (user) navigate("/dashboard");
-      else setError(authError || "Sign up failed.");
-    } catch {
-      setError("Unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label>Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="input-field"
-        />
-      </div>
-
-      <div>
-        <label>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="input-field"
-        />
-      </div>
-
-      {error && <p className="text-red-500">{error}</p>}
-
-      <button type="submit" disabled={loading}>
-        {loading ? "Signing up..." : "Sign Up"}
-      </button>
-    </form>
-  );
+const SignUpPage = () => {
+    return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+            <div className="w-full max-w-md">
+                <SignUpForm />
+                
+                <div className="mt-6 text-center">
+                    <p className="text-gray-600 text-sm">
+                        Already have an account? 
+                        <Link to="/auth/login" className="ml-1 text-indigo-600 font-medium hover:text-indigo-800 transition">
+                            Log In
+                        </Link>
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
 };
 
-export default SignUpForm;
+export default SignUpPage;

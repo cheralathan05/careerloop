@@ -1,81 +1,113 @@
-import { useState } from "react";
-import { signUpWithEmail } from "../../firebase/authService";
-import { useNavigate } from "react-router-dom";
+// src/components/auth/SignUpForm.jsx
+
+import React, { useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+// import { validateEmail, validatePassword } from '../../utils/validators'; // Assumed
 
 const SignUpForm = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { signUp, sendVerificationEmail } = useAuth();
+    const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
 
-    try {
-      const { user, error: authError } = await signUpWithEmail(email, password);
-      if (user) {
-        navigate("/dashboard");
-      } else {
-        setError(authError || "Sign up failed.");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Unexpected error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  };
+        // Basic validation
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            setLoading(false);
+            return;
+        }
+        // TODO: Add full validation from utils/validators.js here
 
-  return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto p-6 bg-white shadow-md rounded space-y-6">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          placeholder="you@example.com"
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={loading}
-        />
-      </div>
+        try {
+            const userCredential = await signUp(email, password);
+            
+            // Send email verification link immediately after signup
+            if (userCredential.user) {
+                await sendVerificationEmail(userCredential.user);
+                alert('Success! Check your email to verify your account before logging in.');
+            }
 
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          placeholder="Enter your password"
-          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={loading}
-        />
-      </div>
+            navigate('/auth/login'); // Redirect to login page
+        } catch (err) {
+            // Firebase error codes
+            if (err.code === 'auth/email-already-in-use') {
+                setError('This email is already registered.');
+            } else {
+                setError('Failed to create an account. Please try again.');
+            }
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      {error && (
-        <p className="text-red-600 bg-red-50 p-2 rounded text-sm">{error}</p>
-      )}
+    return (
+        <form onSubmit={handleSubmit} className="p-8 bg-white rounded-lg shadow-xl w-full max-w-md">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800">Create Account</h2>
+            
+            {error && (
+                <p className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert">
+                    {error}
+                </p>
+            )}
 
-      <button
-        type="submit"
-        disabled={loading || !email || !password}
-        className="w-full py-2 px-4 rounded bg-green-600 text-white font-medium hover:bg-green-700 disabled:opacity-50"
-      >
-        {loading ? "Signing up..." : "Sign Up"}
-      </button>
-    </form>
-  );
+            <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">Email</label>
+                <input
+                    type="email"
+                    id="email-signup"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="shadow border rounded w-full py-3 px-4 text-gray-700 focus:ring-2 focus:ring-indigo-500"
+                    placeholder="career@loop.com"
+                    required
+                />
+            </div>
+
+            <div className="mb-4">
+                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="password">Password</label>
+                <input
+                    type="password"
+                    id="password-signup"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="shadow border rounded w-full py-3 px-4 text-gray-700 focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Must be 6+ characters"
+                    required
+                />
+            </div>
+            
+            <div className="mb-6">
+                <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="confirm-password">Confirm Password</label>
+                <input
+                    type="password"
+                    id="confirm-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="shadow border rounded w-full py-3 px-4 text-gray-700 focus:ring-2 focus:ring-indigo-500"
+                    placeholder="********"
+                    required
+                />
+            </div>
+
+            <button
+                type="submit"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded transition w-full"
+                disabled={loading}
+            >
+                {loading ? 'Signing Up...' : 'Sign Up'}
+            </button>
+        </form>
+    );
 };
 
 export default SignUpForm;

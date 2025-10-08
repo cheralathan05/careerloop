@@ -1,88 +1,73 @@
-import React, { useState } from "react";
-import { resetPassword } from "../../firebase/authService";
-import { Link } from "react-router-dom";
+// src/pages/auth/ForgotPasswordPage.jsx
+
+import React, { 
+    useState 
+} from 'react';
+import { 
+    useAuth 
+} from '../../hooks/useAuth';
 
 const ForgotPasswordPage = () => {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [error, setError] = useState('');
+    const { 
+        resetPassword 
+    } = useAuth();
 
-  const handleReset = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-    setError("");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        setError('');
 
-    try {
-      const { success, error: resetError } = await resetPassword(email);
-      if (success) {
-        setMessage("Password reset email sent! Check your inbox.");
-      } else {
-        setError(resetError || "Failed to send reset email.");
-      }
-    } catch (err) {
-      setError("Unexpected error occurred.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+        if (!email) {
+            setError('Please enter your email address.');
+            return;
+        }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="bg-white shadow-md rounded-lg p-6 w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-bold text-center text-gray-800">
-          Reset Password
-        </h1>
-        <p className="text-sm text-gray-600 text-center">
-          Enter your email address to reset your password.
-        </p>
+        try {
+            await resetPassword(email);
+            setMessage('Password reset email sent! Check your inbox.');
+        } catch (err) {
+            setError('Failed to send reset email. Ensure the email is correct and registered.');
+            console.error(err);
+        }
+    };
 
-        <form onSubmit={handleReset} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="p-8 bg-white rounded-lg shadow-xl w-full max-w-md">
+                <h2 className="text-2xl font-bold mb-4 text-gray-800">Forgot Password</h2>
+                <p className="mb-6 text-gray-600">Enter your email to receive a password reset link.</p>
 
-          {message && (
-            <p className="text-green-600 text-sm bg-green-50 p-2 rounded">
-              {message}
-            </p>
-          )}
-          {error && (
-            <p className="text-red-600 text-sm bg-red-50 p-2 rounded">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-2 px-4 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50`}
-          >
-            {loading ? "Sending..." : "Send Reset Email"}
-          </button>
-        </form>
-
-        <p className="text-sm text-center text-gray-500">
-          Remembered your password?{" "}
-          <Link to="/login" className="text-blue-600 hover:underline">
-            Log in
-          </Link>
-        </p>
-      </div>
-    </div>
-  );
+                {message && <p className="p-3 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">{message}</p>}
+                {error && <p className="p-3 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">{error}</p>}
+                
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-medium mb-2" htmlFor="email">
+                            Email
+                        </label>
+                        <input
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="shadow appearance-none border rounded w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="you@example.com"
+                            required
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out w-full"
+                    >
+                        Send Reset Link
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
 };
 
 export default ForgotPasswordPage;
