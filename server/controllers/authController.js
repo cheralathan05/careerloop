@@ -1,156 +1,143 @@
-import User from '../models/User.js';
-import Token from '../models/Token.js';
-import generateToken from '../utils/generateToken.js';
-import { generateOTP } from '../utils/otpHelper.js';
-import sendEmail from '../services/emailService.js';
-import crypto from 'crypto';
+// server/controllers/authController.js (FINAL, CONSOLIDATED VERSION)
 
+const asyncHandler = require('express-async-handler'); // 👈 CRITICAL FIX: Ensure this is imported
+const User = require('../models/User');
+const generateToken = require('../utils/generateToken'); 
+const bcrypt = require('bcryptjs'); // Used for hashing/comparing passwords
+const { generateAndSendOTP, verifyOTP } = require('../services/otpService');
 
-// @desc    Register a new user & send OTP
+// @desc    Register a new user
 // @route   POST /api/auth/signup
-export const signupUser = async (req, res) => {
+// @access  Public
+const registerUser = asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
-
-    try {
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-
-        const user = await User.create({ name, email, password });
-
-        // Generate OTP
-        const otp = generateOTP();
-        await Token.create({ userId: user._id, token: otp });
-
-        // Send OTP email
-        const message = `Your account verification OTP is: ${otp}`;
-        await sendEmail({
-            email: user.email,
-            subject: 'Verify Your Account',
-            message,
-        });
-
-        res.status(201).json({ 
-            message: `An OTP has been sent to ${user.email}. Please verify.`,
-            userId: user._id
-        });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+    
+    // (Actual implementation logic, based on previous steps)
+    // 1. Validation, 2. Check if user exists, 3. Create user, 4. Send token/response
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+        res.status(400);
+        throw new Error('User already exists');
     }
-};
+    
+    const user = await User.create({ name, email, password }); // Password hashing handled by User model pre-save hook
+    
+    if (user) {
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            token: generateToken(user._id),
+            // Optionally, trigger OTP sending here: await generateAndSendOTP(email);
+        });
+    } else {
+        res.status(400);
+        throw new Error('Invalid user data');
+    }
+});
 
-// @desc    Verify OTP and log user in
-// @route   POST /api/auth/verify-otp
-export const verifyOtp = async (req, res) => {
-    const { userId, otp } = req.body;
+// @desc    Authenticate user & get token
+// @route   POST /api/auth/login
+// @access  Public
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-    try {
-        const user = await User.findById(userId);
-        if (!user) return res.status(400).json({ message: 'User not found.' });
+    const user = await User.findOne({ email });
 
-        const token = await Token.findOne({ userId, token: otp });
-        if (!token) return res.status(400).json({ message: 'Invalid or expired OTP.' });
-
-        user.isVerified = true;
-        await user.save();
-        await token.deleteOne(); // OTP is single-use
-
-        res.status(200).json({
+    if (user && (await user.matchPassword(password))) {
+        res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             token: generateToken(user._id),
         });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+    } else {
+        res.status(401); 
+        throw new Error('Invalid credentials');
     }
-};
+});
 
-// @desc    Authenticate user & get token
-// @route   POST /api/auth/login
-export const loginUser = async (req, res) => {
-    const { email, password } = req.body;
 
-    try {
-        const user = await User.findOne({ email });
+// -----------------------------------------------------------
+// --- OTP LOGIC (From your provided snippet) ----------------
+// -----------------------------------------------------------
 
-        if (user && (await user.matchPassword(password))) {
-            if (!user.isVerified) {
-                return res.status(401).json({ message: 'Account not verified. Please check your email for an OTP.' });
-            }
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                token: generateToken(user._id),
-            });
-        } else {
-            res.status(401).json({ message: 'Invalid email or password' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
-};
-
-// @desc    Forgot password
-// @route   POST /api/auth/forgot-password
-export const forgotPassword = async (req, res) => {
+// @desc    Send OTP to user's email
+// @route   POST /api/auth/send-otp
+// @access  Public
+const sendOtp = asyncHandler(async (req, res) => {
     const { email } = req.body;
 
-    try {
-        const user = await User.findOne({ email });
-        if (!user) {
-            // Send a generic message for security
-            return res.status(200).json({ message: 'If a user with that email exists, a reset link has been sent.' });
-        }
+    if (!email) {
+        res.status(400);
+        throw new Error('Please provide an email address.');
+    }
 
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        await Token.create({ userId: user._id, token: resetToken });
+    const response = await generateAndSendOTP(email);
+    
+    res.status(200).json({ 
+        message: 'OTP sent successfully. Check your inbox.',
+        userId: response.user._id,
+    });
+});
 
-        // IMPORTANT: In a real app, the resetURL should come from your frontend config
-        const resetURL = `http://localhost:3000/reset-password/${resetToken}`; 
-        const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please click the following link to reset your password: \n\n ${resetURL}`;
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+const verifyOtp = asyncHandler(async (req, res) => {
+    const { userId, otp } = req.body;
 
-        await sendEmail({
+    if (!userId || !otp) {
+        res.status(400);
+        throw new Error('Please provide user ID and OTP.');
+    }
+
+    const { user, token } = await verifyOTP(userId, otp);
+
+    res.status(200).json({
+        user: {
+            _id: user._id,
+            name: user.name,
             email: user.email,
-            subject: 'Password Reset Request',
-            message,
-        });
+            isVerified: user.isVerified,
+        },
+        token,
+        message: 'Account successfully verified.',
+    });
+});
 
-        res.status(200).json({ message: 'If a user with that email exists, a reset link has been sent.' });
+// -----------------------------------------------------------
+// --- GOOGLE OAUTH LOGIC (From your provided snippet) -------
+// -----------------------------------------------------------
 
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+// @desc    Handle successful Google OAuth callback
+// @route   GET /api/auth/google/success
+// @access  Private 
+const googleAuthSuccess = (req, res) => {
+    if (req.user) {
+        const token = generateToken(req.user._id);
+
+        // Redirect back to the client dashboard with the token
+        res.redirect(`${process.env.CLIENT_URL}/dashboard?token=${token}`);
+        
+    } else {
+        res.redirect(`${process.env.CLIENT_URL}/login?error=GoogleAuthFailed`);
     }
 };
 
-// @desc    Reset password
-// @route   POST /api/auth/reset-password/:token
-export const resetPassword = async (req, res) => {
-    const { token } = req.params;
-    const { password } = req.body;
 
-    try {
-        const resetToken = await Token.findOne({ token });
-        if (!resetToken) {
-            return res.status(400).json({ message: 'Invalid or expired token.' });
-        }
-
-        const user = await User.findById(resetToken.userId);
-        if (!user) {
-            return res.status(400).json({ message: 'User not found.' });
-        }
-
-        user.password = password;
-        await user.save();
-        await resetToken.deleteOne();
-
-        res.status(200).json({ message: 'Password has been reset successfully.' });
-
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
-    }
+module.exports = {
+    // Standard Auth
+    registerUser,
+    loginUser,
+    
+    // OTP Logic
+    sendOtp,
+    verifyOtp,
+    
+    // OAuth Logic
+    googleAuthSuccess,
+    
+    // Add profile retrieval if implemented elsewhere
+    // getUserProfile 
 };

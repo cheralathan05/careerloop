@@ -1,0 +1,17 @@
+/* client/src/styles/globals.css */
+
+/* Add any global CSS rules, font imports, or CSS resets here */
+
+/* Basic reset */
+html, body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Ensure the app covers the viewport height */
+#root {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}

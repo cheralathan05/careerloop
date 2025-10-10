@@ -1,16 +1,13 @@
+// client/src/main.jsx
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App.jsx';
-import { AuthProvider } from './context/AuthContext.jsx';
-import './index.css'; // Assuming you have a CSS file for global styles
+import './styles/tailwind.css'; // Or './index.css' as per your structure
 
+// Ensure the root element exists in index.html
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <Router>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </Router>
+    <App />
   </React.StrictMode>,
 );
