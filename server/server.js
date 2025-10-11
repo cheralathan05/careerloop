@@ -1,51 +1,50 @@
-// server/server.js
+// server/server.js (FINAL CORRECTED VERSION)
+
+// 🛑 1. Load Environment Variables EXPLICITLY FIRST
+// We must ensure the .env file is loaded and variables (like MONGO_URI) are available.
+const dotenv = require('dotenv');
+dotenv.config(); 
 
 const express = require('express');
-const dotenv = require('dotenv').config(); // Load environment variables
 const cors = require('cors');
-const connectDB = require('./config/db'); // Database connection
+const connectDB = require('./config/db'); // Database connection utility
 const authRoutes = require('./routes/authRoutes');
-const { errorHandler } = require('./middleware/errorMiddleware'); // Simple error handler
+const { errorHandler } = require('./middleware/errorMiddleware');
+const { notFound } = require('./middleware/errorMiddleware'); // Also import notFound
+const passport = require('passport'); // Required for Google OAuth
 
-// Connect to database
-connectDB();
+// 🛑 2. Connect to database ONLY AFTER dotenv has run
+connectDB(); 
 
 const app = express();
 const port = process.env.PORT || 5000;
 
 // --- Middleware ---
-app.use(express.json()); // Body parser for raw JSON
-app.use(express.urlencoded({ extended: false })); // Body parser for form data
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
-// CORS Configuration (Essential for frontend communication)
+// CORS Configuration
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000', // Allow requests from your React frontend
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true, // Allows cookies/authorization headers
+    credentials: true,
 }));
+
+// Initialize Passport for Google OAuth
+app.use(passport.initialize());
 
 // --- Routes ---
 app.get('/', (req, res) => res.send('Authentication API is running'));
 app.use('/api/auth', authRoutes);
 
 // --- Error Handler Middleware ---
-// This should be the last middleware used
+// 🛑 3. Add notFound middleware before the general errorHandler
+// If no route is found, this hits first.
+app.use(notFound); 
 app.use(errorHandler); 
 
 
 app.listen(port, () => console.log(`Server started on port ${port}`));
 
-
-// --- Simple Error Handler Example (Create this in server/middleware/errorMiddleware.js) ---
-/*
-const errorHandler = (err, req, res, next) => {
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    res.status(statusCode);
-    res.json({
-        message: err.message,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    });
-};
-
-module.exports = { errorHandler };
-*/
+// Note: You must ensure 'notFound' and 'errorHandler' are implemented and exported 
+// in server/middleware/errorMiddleware.js.

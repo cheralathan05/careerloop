@@ -1,17 +1,20 @@
-// server/utils/sendEmail.js
+// server/utils/sendEmail.js (FINAL CORRECTED VERSION FOR MAILTRAP)
 
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (options) => {
     // 1. Create a transporter object using SMTP transport
-    // Use environment variables for service details (e.g., Gmail, SendGrid, etc.)
     const transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST, 
-        port: process.env.EMAIL_PORT, // 587 for TLS, 465 for SSL
-        secure: process.env.EMAIL_PORT == 465, // true for 465, false for other ports
+        port: process.env.EMAIL_PORT, 
+        
+        // 🛑 CRITICAL FIX: Mailtrap often uses port 2525 and is not fully secure (SSL/TLS).
+        // We ensure 'secure' is FALSE unless the port is explicitly 465 (the SSL port).
+        secure: process.env.EMAIL_PORT == 465, // Should resolve to false for port 2525
+        
         auth: {
-            user: process.env.EMAIL_USERNAME, // your email address
-            pass: process.env.EMAIL_PASSWORD, // your email password or app key
+            user: process.env.EMAIL_USERNAME,
+            pass: process.env.EMAIL_PASSWORD,
         },
     });
 
@@ -25,7 +28,9 @@ const sendEmail = async (options) => {
     };
 
     // 3. Send the email
+    console.log(`Attempting to send OTP to: ${options.to}`);
     await transporter.sendMail(mailOptions);
+    console.log(`Email successfully queued by transporter.`);
 };
 
 module.exports = sendEmail;
