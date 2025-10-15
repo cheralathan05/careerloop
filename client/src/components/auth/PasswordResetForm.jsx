@@ -1,20 +1,22 @@
-// client/src/components/auth/PasswordResetForm.jsx
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../common/Button';
 import Input from '../common/Input';
-import authService from '../../api/authService'; // Assuming you add forgot/reset methods here
+import authService from '../../api/authService';
 
-const PasswordResetForm = ({ type = 'forgot' }) => {
+const PasswordResetForm = ({ type = 'forgot', token: propToken = '' }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [token, setToken] = useState(''); // Used for ResetPassword type
+    const [token, setToken] = useState(propToken);
     const [message, setMessage] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const isForgot = type === 'forgot';
+
+    useEffect(() => {
+        setToken(propToken);
+    }, [propToken]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -24,23 +26,19 @@ const PasswordResetForm = ({ type = 'forgot' }) => {
 
         try {
             if (isForgot) {
-                // Logic for initiating the forgot password email
-                // Assumes authService.forgotPassword(email) sends a reset link
                 const response = await authService.forgotPassword({ email });
                 setMessage(response.message || 'Password reset link sent! Check your email.');
-
             } else {
-                // Logic for resetting the password after clicking the email link
                 if (password !== confirmPassword) {
                     setError('Passwords do not match.');
                     setLoading(false);
                     return;
                 }
-                
-                // Assuming token is extracted from URL in ResetPassword.jsx parent component
                 const response = await authService.resetPassword({ token, newPassword: password });
                 setMessage(response.message || 'Password successfully reset! You can now log in.');
-                // Optional: Redirect to login page
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Operation failed. Please try again.');
@@ -68,7 +66,6 @@ const PasswordResetForm = ({ type = 'forgot' }) => {
                 />
             ) : (
                 <>
-                    {/* Assuming token is handled by parent, otherwise include a hidden input */}
                     <Input
                         type="password"
                         value={password}
@@ -87,7 +84,7 @@ const PasswordResetForm = ({ type = 'forgot' }) => {
             )}
 
             <Button type="submit" disabled={loading} className="w-full mt-4">
-                {loading ? 'Processing...' : (isForgot ? 'Send Reset Link' : 'Change Password')}
+                {loading ? 'Processing...' : isForgot ? 'Send Reset Link' : 'Change Password'}
             </Button>
         </form>
     );

@@ -1,57 +1,59 @@
-// server/routes/authRoutes.js (FINAL, CONSOLIDATED VERSION)
+// server/routes/authRoutes.js
 
 const express = require('express');
 const router = express.Router();
-const passport = require('passport'); // Required for Google OAuth
-const { protect } = require('../middleware/authMiddleware'); // For protected routes
-const { validateOtp } = require('../middleware/otpMiddleware'); // For OTP validation
+const passport = require('passport'); // Google OAuth
+const { protect } = require('../middleware/authMiddleware'); // JWT protection
+const { validateOtp } = require('../middleware/otpMiddleware'); // Optional OTP validation
 
-// CRITICAL: Import ALL required controller functions from authController.js
-// If any function here is not exported by authController.js, the server will crash.
-const { 
-    registerUser, 
-    loginUser, 
-    sendOtp, 
+const {
+    registerUser,
+    loginUser,
+    sendOtp,
     verifyOtp,
-    googleAuthSuccess, 
-    // This function must be defined and exported in authController.js
-    getUserProfile, 
+    googleAuthSuccess,
+    getUserProfile,
+    forgotPassword,    // Forgot password controller
+    resetPassword      // Reset password controller
 } = require('../controllers/authController');
 
 
-// --- PUBLIC ROUTES (No JWT required) ---
+// --- PUBLIC ROUTES ---
 
-// Standard Authentication
+// Standard authentication
 router.post('/signup', registerUser);
 router.post('/login', loginUser);
 
-// OTP Verification Flow
+// OTP flow
 router.post('/send-otp', sendOtp);
-router.post('/verify-otp', validateOtp, verifyOtp); // Example: using OTP middleware
+router.post('/verify-otp', validateOtp, verifyOtp);
 
-// --- GOOGLE OAUTH ROUTES ---
+// Forgot / Reset password
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
-// 1. Initiates the Google login process
+// --- GOOGLE OAUTH ---
+
+// Initiate Google login
 router.get('/google', passport.authenticate('google', {
     scope: ['profile', 'email'],
-    session: false // We use JWTs, not session cookies
+    session: false
 }));
 
-// 2. Google redirects here after user grants permission
+// Google OAuth callback
 router.get(
     '/google/callback',
     passport.authenticate('google', { 
         failureRedirect: '/login',
-        session: false 
+        session: false
     }),
-    googleAuthSuccess // Controller handles JWT generation and client redirect
+    googleAuthSuccess
 );
 
+// --- PROTECTED ROUTES ---
 
-// --- PROTECTED ROUTES (JWT required via `protect` middleware) ---
+// User profile (JWT required)
+router.get('/profile', protect, getUserProfile);
 
-// Get user profile (Requires a valid token in the Authorization header)
-// This was the route likely causing the initial crash if getUserProfile wasn't defined/exported.
-router.get('/profile', protect, getUserProfile); 
 
 module.exports = router;

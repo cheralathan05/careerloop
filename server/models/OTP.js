@@ -15,10 +15,14 @@ const OTPSchema = mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now,
-        // Automatically delete the document after 10 minutes (600 seconds)
-        expires: 60 * 10, 
+        // Remove the 'expires' field from here if it exists.
+        // It's cleaner to define the index explicitly below.
     },
 });
+
+// ✅ CRITICAL FIX: Explicitly define the TTL index using expireAfterSeconds (in seconds)
+// This tells MongoDB to automatically delete the document 600 seconds (10 minutes) after creation.
+OTPSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 10 }); 
 
 const OTP = mongoose.model('OTP', OTPSchema);
 

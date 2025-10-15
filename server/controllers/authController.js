@@ -1,16 +1,16 @@
-// server/controllers/authController.js (FINAL, COMPLETE, AND WORKING VERSION)
+// server/controllers/authController.js (FINAL, COMPLETE, AND WORKING)
 
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken'); 
 const bcrypt = require('bcryptjs'); 
+const crypto = require('crypto');
+const sendEmail = require('../utils/sendEmail');
 const { generateAndSendOTP, verifyOTP } = require('../services/otpService');
-
 
 // --- 1. Standard Auth Logic ---
 
 const registerUser = asyncHandler(async (req, res) => {
-    // 🎯 FIX: Extract variables from req.body first
     const { name, email, password } = req.body; 
     
     if (!email || !password || !name) {
@@ -24,7 +24,6 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new Error('User already exists');
     }
     
-    // User creation logic
     const user = await User.create({ name, email, password });
     
     if (user) {
@@ -33,7 +32,6 @@ const registerUser = asyncHandler(async (req, res) => {
             name: user.name,
             email: user.email,
             token: generateToken(user._id),
-            // Note: Keep email sending commented out until Nodemailer is configured
         });
     } else {
         res.status(400);
@@ -42,12 +40,9 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-    // 🎯 FIX: Extract variables from req.body first
     const { email, password } = req.body;
-
     const user = await User.findOne({ email });
 
-    // matchPassword method is defined in the User model
     if (user && (await user.matchPassword(password))) {
         res.json({
             _id: user._id,
@@ -61,11 +56,9 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 });
 
-
-// --- 2. OTP Logic (sendOtp, verifyOtp) ---
+// --- 2. OTP Logic ---
 
 const sendOtp = asyncHandler(async (req, res) => {
-    // Variables are correctly defined here: const { email } = req.body;
     const { email } = req.body; 
     
     if (!email) {
@@ -82,7 +75,6 @@ const sendOtp = asyncHandler(async (req, res) => {
 });
 
 const verifyOtp = asyncHandler(async (req, res) => {
-    // Variables are correctly defined here: const { userId, otp } = req.body;
     const { userId, otp } = req.body; 
 
     if (!userId || !otp) {
@@ -104,8 +96,49 @@ const verifyOtp = asyncHandler(async (req, res) => {
     });
 });
 
+// --- 3. Forgot / Reset Password ---
 
-// --- 3. Google OAuth Logic (googleAuthSuccess) ---
+const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    if (!email) throw new Error('Please provide your email');
+
+    const user = await User.findOne({ email });
+    if (!user) throw new Error('User not found');
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
+    await user.save();
+
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+
+    await sendEmail({
+        to: user.email,
+        subject: 'Password Reset',
+        text: `Click this link to reset your password: ${resetUrl}`
+    });
+
+    res.status(200).json({ message: 'Password reset link sent! Check your email.' });
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+    const { token, newPassword } = req.body;
+
+    const user = await User.findOne({
+        resetPasswordToken: token,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+    if (!user) throw new Error('Invalid or expired token');
+
+    user.password = newPassword;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.status(200).json({ message: 'Password successfully reset!' });
+});
+
+// --- 4. Google OAuth ---
 
 const googleAuthSuccess = (req, res) => {
     if (req.user) {
@@ -116,19 +149,19 @@ const googleAuthSuccess = (req, res) => {
     }
 };
 
-
-// --- 4. Profile Retrieval ---
+// --- 5. Profile Retrieval ---
 
 const getUserProfile = asyncHandler(async (req, res) => {
     res.status(200).json(req.user); 
 });
-
 
 module.exports = {
     registerUser,
     loginUser,
     sendOtp,
     verifyOtp,
+    forgotPassword,
+    resetPassword,
     googleAuthSuccess,
-    getUserProfile, 
+    getUserProfile,
 };
