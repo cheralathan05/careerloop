@@ -1,4 +1,4 @@
-// client/src/components/auth/AuthForm.jsx (FINAL AND COMPLETE VERSION)
+// client/src/components/auth/AuthForm.jsx
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -8,112 +8,111 @@ import Button from '../common/Button';
 import Input from '../common/Input'; 
 
 const AuthForm = ({ type = 'login' }) => {
-    const [formData, setFormData] = useState({ email: '', password: '', name: '' });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    
-    const { login } = useAuth(); 
-    const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-    const isLogin = type === 'login';
+  const { login } = useAuth(); 
+  const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        setError(''); 
-    };
+  const isLogin = type === 'login';
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError('');
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError('');
+  };
 
-        try {
-            if (isLogin) {
-                // Login Logic
-                await login({ email: formData.email, password: formData.password });
-                navigate('/dashboard'); 
-            } else {
-                // 🎯 SIGNUP LOGIC WITH STATE PASSING
-                // Assuming authService.signup returns data containing { user: { _id, ... }, token }
-                const response = await authService.signup(formData);
-                
-                // Extract the user ID and email from the response data and form data, respectively
-                const userId = response.user?._id || response._id; 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-                if (!userId) {
-                    throw new Error("Signup successful but user ID was not returned.");
-                }
+    try {
+      if (isLogin) {
+        // ✅ LOGIN FLOW
+        await login({ email: formData.email, password: formData.password });
+        navigate('/dashboard');
+      } else {
+        // ✅ SIGNUP FLOW
+        const signupResponse = await authService.signup({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        });
 
-                // Navigate to VerifyOTP page, passing userId and email via state
-                navigate('/verify-otp', { 
-                    state: { 
-                        userId: userId, 
-                        email: formData.email 
-                    } 
-                });
-            }
-        } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Authentication failed.';
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Correctly extract userId and email
+        const userId = signupResponse.user?._id;
+        const email = signupResponse.user?.email;
+        if (!userId) throw new Error('Signup failed: No user ID returned.');
 
-    return (
-        <form onSubmit={handleSubmit} className="p-6 border rounded-lg shadow-md w-full max-w-sm bg-white">
-            <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-                {isLogin ? 'Log In' : 'Sign Up'}
-            </h2>
-            
-            {!isLogin && (
-                <Input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Name"
-                    required
-                />
-            )}
-            
-            <Input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Email Address"
-                required
-            />
+        // ✅ Send OTP after signup
+        const otpResponse = await authService.sendOtp({ email });
+        if (otpResponse?.message) console.log('OTP sent successfully');
 
-            <Input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Password"
-                required
-            />
-            
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        // ✅ Navigate to OTP verification page
+        navigate('/verify-otp', { state: { userId, email } });
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Authentication failed.';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            <Button type="submit" disabled={loading} className="w-full mt-4">
-                {loading ? 'Processing...' : (isLogin ? 'Login' : 'Signup')}
-            </Button>
-            
-            {/* Forgot Password Link Addition */}
-            {isLogin && (
-                <div className="text-right mt-2">
-                    <Link 
-                        to="/forgot-password" 
-                        className="text-sm text-indigo-600 hover:text-indigo-800 transition duration-150"
-                    >
-                        Forgot Password?
-                    </Link>
-                </div>
-            )}
-        </form>
-    );
+  return (
+    <form onSubmit={handleSubmit} className="p-6 border rounded-lg shadow-md w-full max-w-sm bg-white">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+        {isLogin ? 'Log In' : 'Sign Up'}
+      </h2>
+
+      {!isLogin && (
+        <Input
+          type="text"
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="Full Name"
+          required
+        />
+      )}
+
+      <Input
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+        placeholder="Email Address"
+        required
+      />
+
+      <Input
+        type="password"
+        name="password"
+        value={formData.password}
+        onChange={handleChange}
+        placeholder="Password"
+        required
+      />
+
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
+      <Button type="submit" disabled={loading} className="w-full mt-4">
+        {loading ? 'Processing...' : (isLogin ? 'Login' : 'Sign Up')}
+      </Button>
+
+      {isLogin && (
+        <div className="text-right mt-2">
+          <Link 
+            to="/forgot-password" 
+            className="text-sm text-indigo-600 hover:text-indigo-800 transition duration-150"
+          >
+            Forgot Password?
+          </Link>
+        </div>
+      )}
+    </form>
+  );
 };
 
 export default AuthForm;

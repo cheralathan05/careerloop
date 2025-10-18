@@ -2,8 +2,6 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import authService from '../api/authService';
-// Assuming you have a utility to decode JWT to get user info without server hit
-// import jwtDecode from 'jwt-decode'; 
 
 const AuthContext = createContext();
 
@@ -11,35 +9,37 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Check for existing token on mount
+    // --- Check for existing token on mount ---
     useEffect(() => {
         const token = localStorage.getItem('userToken');
         if (token) {
-            // In a real app, you'd decode the token or verify it with the server
-            // For simplicity, we'll assume the token is valid for now.
-            // A more robust way is to make an /api/auth/me request.
-            setUser({ /* User data from decoded token or server check */ });
+            // Optional: decode JWT to extract user info or call /api/auth/me
+            // Here we assume token is valid and we fetch user info from server
+            setUser({ token }); // You can extend with decoded info
         }
         setIsLoading(false);
     }, []);
 
-    // Function to handle login
+    // --- Login Function ---
     const login = async (credentials) => {
         setIsLoading(true);
         try {
             const data = await authService.login(credentials);
-            // Assuming login response contains token and user info
-            setUser(data.user); 
-            // The token is saved in authService, now we update the state
+            // Login returns user info + token
+            setUser({
+                _id: data._id,
+                name: data.name,
+                email: data.email,
+            });
             setIsLoading(false);
             return data;
-        } catch (error) {
+        } catch (err) {
             setIsLoading(false);
-            throw error; // Re-throw to be handled by the component
+            throw err;
         }
     };
 
-    // Function to handle logout
+    // --- Logout Function ---
     const logout = () => {
         authService.logout();
         setUser(null);
@@ -51,13 +51,11 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         login,
         logout,
-        // Add signup, verifyOtp, etc. functionalities as needed
+        // Extend with signup, verifyOtp, forgotPassword, resetPassword if needed
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-// Custom hook to use the context
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+// --- Custom Hook ---
+export const useAuth = () => useContext(AuthContext);
