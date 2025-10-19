@@ -5,21 +5,23 @@ import Loader from '../common/Loader'; // Assuming a simple Loader component exi
 
 const AuthLoader = () => {
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 z-50">
+    // 1. Accessibility: role="status" informs screen readers this element shows status
+    <div 
+      className="fixed inset-0 flex flex-col items-center justify-center bg-white bg-opacity-75 z-50"
+      role="status" 
+      aria-live="polite" // Indicates that updates are important and should be announced
+    >
       <Loader /> {/* A spinning circle or similar */}
-      <p className="mt-4 text-lg text-indigo-600">
-        Securing your session...
+      
+      {/* 2. Clarity: Use a span for better semantics or keep as p */}
+      <p className="mt-4 text-lg text-indigo-600 font-medium">
+        Securing your session... Please wait.
       </p>
+
+      {/* 3. Accessibility: Visually hidden text for screen reader context */}
+      <span className="sr-only">Loading authentication status.</span>
     </div>
   );
 };
 
 export default AuthLoader;
-
-// --- Example for client/src/components/common/Loader.jsx ---
-/*
-const Loader = () => (
-    <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500"></div>
-);
-export default Loader;
-*/

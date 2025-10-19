@@ -1,11 +1,17 @@
 /* client/src/styles/tailwind.css */
 
-/* Import Tailwind directives */
+/* --- 1. TAILWIND CSS DIRECTIVES (Must be at the top) --- */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom classes can be added here */
-.min-h-screen-minus-nav {
-    min-height: calc(100vh - 64px); /* Adjust '64px' to match your Navbar height */
+/* --- 2. CUSTOM COMPONENTS LAYER (Best Practice) --- */
+
+@layer components {
+    /* 🚨 CRITICAL: Use @layer components for custom classes like this */
+    .min-h-screen-minus-nav {
+        /* Adjust the 64px value to exactly match your Navbar's height. 
+           (e.g., if your Navbar is py-3, check its calculated height) */
+        min-height: calc(100vh - 64px); 
+    }
 }

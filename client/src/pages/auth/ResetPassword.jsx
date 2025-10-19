@@ -1,107 +1,112 @@
 // client/src/pages/auth/ResetPassword.jsx
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Input from '../../components/common/Input';
-import Button from '../../components/common/Button';
-import authService from '../../api/authService';
+import axios from 'axios';
 
 const ResetPassword = () => {
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [token, setToken] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-
   const location = useLocation();
   const navigate = useNavigate();
 
-  // --- Extract token from URL query parameters
+  const [token, setToken] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // 🔑 Extract token from URL or sessionStorage
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const resetToken = params.get('token');
-    if (!resetToken) {
-      setError('Reset token is missing. Please check your link.');
+    const queryParams = new URLSearchParams(location.search);
+    const urlToken = queryParams.get('token');
+    const storedToken = sessionStorage.getItem('resetToken');
+
+    if (urlToken) {
+      setToken(urlToken);
+      sessionStorage.setItem('resetToken', urlToken); // persist token
+    } else if (storedToken) {
+      setToken(storedToken);
     } else {
-      setToken(resetToken);
+      setError('Invalid or missing token. Please request a new password reset link.');
     }
   }, [location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!token) {
-      setError('Reset token is missing. Cannot reset password.');
+      setError('Cannot submit: Token is missing.');
       return;
     }
-
-    if (!password || !confirmPassword) {
-      setError('Please fill out all fields.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
     setLoading(true);
+    setError('');
+    setMessage('');
 
     try {
-      const res = await authService.resetPassword({ token, newPassword: password });
-      setSuccess(res.message || 'Password reset successful! Redirecting to login...');
-      setTimeout(() => navigate('/login'), 3000); // Redirect after 3 seconds
+      const { data } = await axios.post(
+        'http://localhost:5000/api/auth/reset-password',
+        { token, newPassword: password } // backend expects token + newPassword
+      );
+
+      setMessage(data.message || 'Password reset successful!');
+      setLoading(false);
+      sessionStorage.removeItem('resetToken'); // clear token after success
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => navigate('/login'), 2000);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Reset password failed.';
-      setError(errorMessage);
-      console.error('ResetPassword Error:', errorMessage);
-    } finally {
+      setError(err.response?.data?.message || 'Failed to reset password. Try again.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
-      <div className="w-full max-w-md p-8 border rounded-lg shadow-xl bg-white">
-        <h2 className="text-3xl font-bold mb-4 text-center text-indigo-600">
-          Reset Password
-        </h2>
-        <p className="mb-6 text-center text-gray-600">
-          Enter your new password below.
-        </p>
+    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
+      <h2>Reset Password</h2>
+      {error && <p style={{ color: 'red', fontWeight: 'bold' }}>{error}</p>}
+      {message && <p style={{ color: 'green', fontWeight: 'bold' }}>{message}</p>}
 
+      {token ? (
         <form onSubmit={handleSubmit}>
-          <Input
-            type="password"
-            name="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="New Password"
-            required
-          />
-          <Input
-            type="password"
-            name="confirmPassword"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Confirm New Password"
-            required
-          />
-
-          {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
-          {success && <p className="text-green-600 text-sm mt-2 text-center">{success}</p>}
-
-          <Button
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>New Password:</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '8px', marginBottom: '10px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px' }}>Confirm Password:</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              style={{ width: '100%', padding: '8px', marginBottom: '20px' }}
+            />
+          </div>
+          <button
             type="submit"
-            disabled={loading || !token}
-            className="w-full mt-4"
+            disabled={loading}
+            style={{ padding: '10px 15px', backgroundColor: '#4f46e5', color: 'white', border: 'none', borderRadius: '4px' }}
           >
             {loading ? 'Resetting...' : 'Reset Password'}
-          </Button>
+          </button>
         </form>
-      </div>
+      ) : (
+        <p style={{ color: '#666' }}>Please use the link sent to your email.</p>
+      )}
     </div>
   );
 };

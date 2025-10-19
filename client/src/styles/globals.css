@@ -1,17 +1,85 @@
 /* client/src/styles/globals.css */
 
-/* Add any global CSS rules, font imports, or CSS resets here */
+/* --- 1. TAILWIND CSS DIRECTIVES --- */
 
-/* Basic reset */
-html, body {
-    margin: 0;
-    padding: 0;
+/* Base resets Tailwind provides (normalize.css and preflight) */
+@tailwind base;
+/* Component styles (utilities for things like forms, buttons, etc.) */
+@tailwind components;
+/* Utility classes (flex, padding, margin, colors, etc.) */
+@tailwind utilities;
+
+/* NOTE: If you are NOT using a proper Tailwind setup (e.g., PostCSS config), 
+  you MUST configure your build tool to process the above directives.
+*/
+
+---
+
+/* --- 2. GLOBAL FONT DEFINITIONS (BEST PRACTICE) --- */
+
+/* You can import a custom font here, e.g., Google Fonts' Inter */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap'); */
+
+/* Apply the default font across the application */
+body {
+    /* If using Tailwind default fonts, this is optional, but useful for fallbacks */
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Optional: Smooth font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- 3. ROOT LAYOUT STRUCTURE (For Sticky Footer) --- */
+
+/* Basic box-sizing reset applied globally for simplicity */
+*,
+*::before,
+*::after {
     box-sizing: border-box;
 }
 
-/* Ensure the app covers the viewport height */
+/* Ensure the app covers the viewport height and uses the sticky footer layout */
+html, body, #root {
+    /* Use 100% height to ensure full inheritance */
+    height: 100%; 
+    margin: 0;
+    padding: 0;
+}
+
+/* The primary container (Your #root element) must enable flex-column layout */
 #root {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
+
+/* --- 4. ACCESSIBILITY UTILITY (For Loader/Screen Reader Only Text) --- */
+
+/* This style is essential for the sr-only class used in your Loader component */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* --- 5. Custom Scrollbar (Optional Polish) --- */
+
+/* For a cleaner look on modern browsers */
+/*
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+*/

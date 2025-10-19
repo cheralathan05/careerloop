@@ -1,93 +1,112 @@
 // client/src/api/authService.js
+
 import axios from 'axios';
 
-// ✅ Base URL for your backend auth routes
-const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api/auth';
+// ⚠️ Security Note:
+// If using HttpOnly cookies, storing the token in localStorage is optional.
+// Recommended: rely on cookies for session management.
+
+// --- ⚙️ CONFIGURATION ---
+
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+const API_URL = `${BASE_URL}/api/auth`;
 
 const authAPI = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Needed for Google OAuth and secure cookies
+  headers: { 'Content-Type': 'application/json' },
+  withCredentials: true, // required for cookies
 });
+
+// --- 🛑 CENTRALIZED ERROR HANDLER ---
+const handleApiError = (error, defaultMessage = 'An unknown error occurred.') => {
+  const errorMessage = error.response?.data?.message || error.message || defaultMessage;
+  console.error('API Error:', errorMessage, error);
+  throw new Error(errorMessage);
+};
 
 // --- 🧩 AUTH FUNCTIONS ---
 
-/**
- * SIGNUP — creates a new user
- * Expects: { name, email, password }
- * Returns: user object at root (with _id, email, etc.)
- */
-const signup = async (data) => {
-  const response = await authAPI.post('/signup', data);
-  return response.data;
-};
-
-/**
- * Send OTP for signup verification (optional if backend auto-sends OTP)
- * Expects: { email }
- */
-const sendOtp = async (data) => {
-  const response = await authAPI.post('/send-otp', data);
-  return response.data;
-};
-
-/**
- * Verify OTP and activate user account
- * Expects: { userId, otp }
- * Returns: { token, user }
- */
-const verifyOtp = async (data) => {
-  const response = await authAPI.post('/verify-otp', data);
-  return response.data;
-};
-
-/**
- * LOGIN — authenticate user
- * Expects: { email, password }
- * Returns: { token, user }
- */
-const login = async (credentials) => {
-  const response = await authAPI.post('/login', credentials);
-  if (response.data.token) {
-    localStorage.setItem('userToken', response.data.token);
+// SIGNUP
+export const signup = async (data) => {
+  try {
+    const res = await authAPI.post('/signup', data);
+    return res.data;
+  } catch (err) {
+    handleApiError(err, 'Signup failed. Please check your credentials.');
   }
-  return response.data;
 };
 
-/**
- * Forgot password — send reset link
- * Expects: { email }
- */
-const forgotPassword = async (data) => {
-  const response = await authAPI.post('/forgot-password', data);
-  return response.data;
+// SEND OTP
+export const sendOtp = async (data) => {
+  try {
+    const res = await authAPI.post('/send-otp', data);
+    return res.data;
+  } catch (err) {
+    handleApiError(err, 'Failed to send OTP. Please check the email.');
+  }
 };
 
-/**
- * Reset password — using token from email
- * Expects: { token, password }
- */
-const resetPassword = async (data) => {
-  const response = await authAPI.post('/reset-password', data);
-  return response.data;
+// VERIFY OTP
+export const verifyOtp = async (data) => {
+  try {
+    const res = await authAPI.post('/verify-otp', data);
+    // Save token if returned
+    if (res.data?.token) localStorage.setItem('userToken', res.data.token);
+    return res.data;
+  } catch (err) {
+    handleApiError(err, 'OTP verification failed. The code may be invalid or expired.');
+  }
 };
 
-/**
- * Logout — clears token locally
- */
-const logout = () => {
-  localStorage.removeItem('userToken');
+// LOGIN
+export const login = async (credentials) => {
+  try {
+    const res = await authAPI.post('/login', credentials);
+    if (res.data?.token) localStorage.setItem('userToken', res.data.token);
+    return res.data;
+  } catch (err) {
+    handleApiError(err, 'Login failed. Invalid email or password.');
+  }
 };
 
-/**
- * Google Login — redirect to backend for OAuth
- */
-const googleLogin = () => {
-  window.location.href = `${API_URL}/google`;
+// LOGOUT
+export const logout = async () => {
+  try {
+    localStorage.removeItem('userToken');
+    await authAPI.post('/logout'); // Clear server session/cookie
+    return { success: true, message: 'Logged out successfully' };
+  } catch (err) {
+    console.warn('Server logout failed, client cleared state:', err.message);
+    return { success: false, message: 'Logout completed locally, but server session may remain.' };
+  }
 };
 
+// FORGOT PASSWORD
+export const forgotPassword = async (data) => {
+  try {
+    const res = await authAPI.post('/forgot-password', data);
+    return res.data;
+  } catch (err) {
+    handleApiError(err, 'Failed to send password reset link.');
+  }
+};
+
+// RESET PASSWORD
+export const resetPassword = async (data) => {
+  try {
+    const res = await authAPI.post('/reset-password', data);
+    return res.data;
+  } catch (err) {
+    handleApiError(err, 'Password reset failed. The link may be invalid or expired.');
+  }
+};
+
+// GOOGLE LOGIN (redirect)
+export const googleLogin = () => {
+  window.location.href = `${BASE_URL}/api/auth/google`;
+};
+
+// --- EXPORT DEFAULT ---
 export default {
   signup,
   sendOtp,

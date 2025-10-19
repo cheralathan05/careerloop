@@ -2,22 +2,29 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import authService from '../../api/authService';
+import authService from '../../api/authService'; // Use the enhanced service from the previous step
 import Button from '../common/Button';
 import Input from '../common/Input';
 
 const AuthForm = ({ type = 'login' }) => {
-  const [formData, setFormData] = useState({ email: '', password: '', name: '' });
+  const [formData, setFormData] = useState({ 
+    email: '', 
+    password: '', 
+    // Only include name initially for signup clarity
+    ...(type === 'signup' && { name: '' }) 
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const { login } = useAuth();
+  // Destructure the login function from context
+  const { login: contextLogin } = useAuth(); 
   const navigate = useNavigate();
   const isLogin = type === 'login';
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError('');
+    // Clear error message on user input
+    if (error) setError(''); 
   };
 
   const handleSubmit = async (e) => {
@@ -27,31 +34,51 @@ const AuthForm = ({ type = 'login' }) => {
 
     try {
       if (isLogin) {
-        // 🔑 LOGIN FLOW
-        await login({ email: formData.email, password: formData.password });
+        // 🔑 ENHANCED LOGIN FLOW
+        // Note: The contextLogin function should call authService.login and handle token/state setting.
+        const { email, password } = formData;
+        await contextLogin({ email, password }); 
+        
+        // If contextLogin succeeds, navigate to the dashboard
         navigate('/dashboard');
+
       } else {
         // 🧩 SIGNUP FLOW
-        const signupRes = await authService.signup(formData);
+        // Only pass required fields to the service
+        const { name, email, password } = formData;
+        const signupRes = await authService.signup({ name, email, password });
         console.log('Signup Response:', signupRes);
 
-        // ✅ Extract userId from multiple possible locations
-        const userId = signupRes._id || signupRes.user?._id || signupRes.userId;
-        const email = signupRes.email || signupRes.user?.email || formData.email;
+        // ✅ Robust Data Extraction (Good practice here!)
+        const userId = signupRes?._id || signupRes?.user?._id || signupRes?.userId;
+        const userEmail = signupRes?.email || signupRes?.user?.email || formData.email;
 
-        if (!userId) throw new Error('Signup failed: No user ID returned.');
+        if (!userId) {
+            // Throw a custom error if the backend response is unexpected
+            throw new Error('Signup was successful, but the user ID was not returned for OTP verification.');
+        }
 
-        // OTP already sent by backend
-        navigate('/verify-otp', { state: { userId, email } });
+        // OTP is assumed to be sent by the server upon successful signup
+        navigate('/verify-otp', { state: { userId, email: userEmail } });
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Authentication failed.';
+      // 🛑 Centralized and Robust Error Handling
+      // 1. Check for axios response structure
+      const apiErrorMessage = err.response?.data?.message; 
+      // 2. Fallback to the error object message (for service-level or custom errors)
+      const genericErrorMessage = err.message;
+      
+      const errorMessage = apiErrorMessage || genericErrorMessage || 'An unexpected authentication error occurred.';
+      
       setError(errorMessage);
-      console.error('AuthForm Error:', errorMessage);
+      console.error('AuthForm Error:', errorMessage, err);
+
     } finally {
       setLoading(false);
     }
   };
+
+  // --- RENDERING ---
 
   return (
     <form className="p-6 border rounded-lg shadow-md w-full max-w-sm bg-white" onSubmit={handleSubmit}>
@@ -88,7 +115,7 @@ const AuthForm = ({ type = 'login' }) => {
         required
       />
 
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      {error && <p className="text-red-500 text-sm mt-2 font-medium">{error}</p>}
 
       <Button type="submit" disabled={loading} className="w-full mt-4">
         {loading ? 'Processing...' : isLogin ? 'Login' : 'Sign Up'}

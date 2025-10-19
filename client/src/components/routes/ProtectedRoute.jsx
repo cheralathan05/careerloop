@@ -1,24 +1,44 @@
 // client/src/components/routes/ProtectedRoute.jsx
 
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom'; // 🚨 NEW: Import useLocation
 import { useAuth } from '../../context/AuthContext';
-import AuthLoader from '../auth/AuthLoader'; // Component to show loading spinner
+import AuthLoader from '../auth/AuthLoader';
 
 /**
- * ProtectedRoute wrapper component
+ * ProtectedRoute
  * Wraps routes that require authentication.
- * If the user is not authenticated, redirects to /login.
- * If auth status is loading, shows a loader.
+ * - Shows a loading spinner while auth state is being determined.
+ * - Redirects to /login if the user is not authenticated.
+ * - Renders child routes (via <Outlet />) if authenticated.
+ * * NOTE: This component is a wrapper and does not take 'children' as a prop
+ * when used with modern React Router (v6+).
  */
 const ProtectedRoute = () => {
     const { isAuthenticated, isLoading } = useAuth();
+    const location = useLocation(); // To get the current path
 
-    // Show loader while checking auth status
-    if (isLoading) return <AuthLoader />;
+    // 1️⃣ Show loader while checking auth status
+    if (isLoading) {
+        // You can optionally return the AuthLoader from a dedicated component wrapping the app too
+        return <AuthLoader />;
+    }
 
-    // If authenticated, render nested routes
-    return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+    // 2️⃣ If authenticated, render nested routes
+    if (isAuthenticated) {
+        return <Outlet />;
+    }
+
+    // 3️⃣ Not authenticated → redirect to login
+    // ENHANCEMENT: Pass the current location state to the login route. 
+    // This allows the login form to redirect the user back to where they came from (e.g., /dashboard)
+    return (
+        <Navigate 
+            to="/login" 
+            replace 
+            state={{ from: location }} // Pass state to preserve intended destination
+        />
+    );
 };
 
 export default ProtectedRoute;
