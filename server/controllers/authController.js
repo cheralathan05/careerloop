@@ -8,51 +8,35 @@ const sendEmail = require('../utils/sendEmail');
 const { generateAndSendOTP, verifyOTP } = require('../services/otpService');
 
 // ==========================
-// 🧩 SIGNUP (with OTP)
+// 🧩 REGISTER (Sign Up with OTP)
 // ==========================
 const registerUser = asyncHandler(async (req, res) => {
-  console.log('📥 SIGNUP BODY:', req.body);
-
   const { name, email, password } = req.body;
 
-  // Validate input
   if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Please enter all fields' });
+    return res.status(400).json({ message: 'Please enter all required fields' });
   }
 
-  // Check for existing user
   let user = await User.findOne({ email });
   if (user) {
     if (!user.isVerified) {
-      // Resend OTP for unverified user
-      const otpRes = await generateAndSendOTP(email);
+      await generateAndSendOTP(email);
       return res.status(200).json({
         message: 'User exists but not verified. OTP resent.',
         userId: user._id,
-        otpMessage: otpRes.message,
+        email: user.email,
       });
     }
-    return res.status(400).json({ message: 'User already exists and verified.' });
+    return res.status(400).json({ message: 'User already registered and verified.' });
   }
 
-  // Create new user
   user = await User.create({ name, email, password });
+  await generateAndSendOTP(email);
 
-  if (!user || !user._id) {
-    console.error('❌ User creation failed.');
-    return res.status(500).json({ message: 'User could not be created' });
-  }
-
-  console.log('✅ USER CREATED:', user._id);
-
-  // Generate & send OTP
-  const otpResponse = await generateAndSendOTP(email);
-
-  // Return userId to frontend for OTP page
   return res.status(201).json({
-    message: 'Signup successful! OTP sent to email.',
+    message: 'Signup successful. OTP sent to your email.',
     userId: user._id,
-    otpMessage: otpResponse.message,
+    email: user.email,
   });
 });
 
@@ -61,22 +45,23 @@ const registerUser = asyncHandler(async (req, res) => {
 // ==========================
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  console.log('🔐 LOGIN ATTEMPT:', email);
+  if (!email || !password)
+    return res.status(400).json({ message: 'Please enter email and password' });
 
   const user = await User.findOne({ email });
+  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+  if (!user.isVerified) return res.status(401).json({ message: 'Please verify your email before login.' });
 
-  if (user && (await user.matchPassword(password))) {
-    console.log('✅ LOGIN SUCCESS:', user._id);
-    return res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      token: generateToken(user._id),
-    });
-  } else {
-    console.warn('⚠️ Invalid credentials for', email);
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
+  const isMatch = await user.matchPassword(password);
+  if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
+
+  const token = generateToken(user._id);
+  return res.status(200).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    token,
+  });
 });
 
 // ==========================
@@ -86,124 +71,130 @@ const sendOtp = asyncHandler(async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ message: 'Email is required' });
 
-  const response = await generateAndSendOTP(email);
+  const user = await User.findOne({ email });
+  if (!user) return res.status(404).json({ message: 'User not found.' });
 
-  if (!response?.user?._id) {
-    return res.status(500).json({ message: 'Failed to send OTP' });
-  }
-
-  console.log('📨 OTP SENT TO:', email);
-  res.status(200).json({
-    message: 'OTP sent successfully',
-    userId: response.user._id,
-  });
+  await generateAndSendOTP(email);
+  res.status(200).json({ message: 'OTP sent successfully' });
 });
 
 // ==========================
 // ✅ VERIFY OTP
 // ==========================
 const verifyOtp = asyncHandler(async (req, res) => {
-  const { userId, otp } = req.body;
+  const { email, otp } = req.body;
+  if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required.' });
 
-  if (!userId || !otp) {
-    return res
-      .status(400)
-      .json({ message: 'Please provide both userId and OTP' });
-  }
+  const result = await verifyOTP(email, otp);
+  if (!result?.user) return res.status(400).json({ message: 'Invalid or expired OTP.' });
 
-  const { user, token } = await verifyOTP(userId, otp);
-
-  if (!user) {
-    return res.status(400).json({ message: 'Invalid OTP or user not found' });
-  }
-
-  console.log('✅ OTP VERIFIED FOR:', user.email);
-  res.status(200).json({
+  const token = generateToken(result.user._id);
+  return res.status(200).json({
+    message: 'Account verified successfully',
     user: {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      isVerified: user.isVerified,
+      _id: result.user._id,
+      name: result.user.name,
+      email: result.user.email,
+      isVerified: result.user.isVerified,
     },
     token,
-    message: 'Account verified successfully',
   });
 });
 
 // ==========================
 // 🔁 FORGOT PASSWORD
 // ==========================
+// ==========================
+// 🔁 FORGOT PASSWORD (FIXED)
+// ==========================
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ message: 'Email required' });
+  if (!email) return res.status(400).json({ message: 'Email is required' });
 
   const user = await User.findOne({ email });
-  if (!user) return res.status(404).json({ message: 'User not found' });
+  if (!user) {
+    // Security: don't reveal user existence
+    return res.status(200).json({
+      message: 'If a user with that email exists, a password reset link has been sent.',
+    });
+  }
 
+  // Generate reset token
   const resetToken = crypto.randomBytes(32).toString('hex');
-  user.resetPasswordToken = resetToken;
+  user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
   user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 minutes
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
+  // ✅ FIX: use `resetUrl` consistently (not resetURL)
   const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
+
+  const message = `
+    <p>You requested a password reset. Click the link below to set a new password:</p>
+    <a href="${resetUrl}" target="_blank" style="color:#6366f1; text-decoration:none;">${resetUrl}</a>
+    <p>This link is valid for 15 minutes. If you did not request this, please ignore this email.</p>
+  `;
+
   await sendEmail({
     to: user.email,
-    subject: 'Password Reset',
-    text: `Click this link to reset your password: ${resetUrl}`,
+    subject: 'Password Reset Request',
+    html: message,
   });
 
-  console.log('📧 Password reset email sent to:', user.email);
-  res.status(200).json({ message: 'Password reset link sent!' });
+  res.status(200).json({ message: 'Password reset email sent successfully!' });
 });
 
+  
 // ==========================
 // 🔁 RESET PASSWORD
 // ==========================
 const resetPassword = asyncHandler(async (req, res) => {
   const { token, newPassword } = req.body;
+  if (!token || !newPassword)
+    return res.status(400).json({ message: 'Token and new password are required.' });
+
+  if (newPassword.length < 8)
+    return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+
+  const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
   const user = await User.findOne({
-    resetPasswordToken: token,
+    resetPasswordToken: hashedToken,
     resetPasswordExpire: { $gt: Date.now() },
   });
 
-  if (!user)
-    return res.status(400).json({ message: 'Invalid or expired token' });
+  if (!user) return res.status(400).json({ message: 'Invalid or expired reset token.' });
 
+  // 1. Set new password (Mongoose pre-save hook handles hashing)
   user.password = newPassword;
+  
+  // 2. Clear token fields
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
-  await user.save();
+  
+  // 🚨 CRITICAL FINAL FIX: Add { validateBeforeSave: false } 
+  // This ensures Mongoose only updates the password without failing on other untouched 'required' fields.
+  await user.save({ validateBeforeSave: false }); // <--- THIS LINE IS THE FIX
 
-  console.log('🔐 Password reset for:', user.email);
-  res.status(200).json({ message: 'Password successfully reset' });
+  res.status(200).json({ message: 'Password reset successfully!' });
 });
-
 // ==========================
-// 🌐 GOOGLE AUTH
+// 🌐 GOOGLE AUTH SUCCESS
 // ==========================
 const googleAuthSuccess = (req, res) => {
   if (req.user) {
     const token = generateToken(req.user._id);
-    console.log('✅ Google auth success:', req.user.email);
     res.redirect(`${process.env.CLIENT_URL}/dashboard?token=${token}`);
   } else {
-    console.warn('⚠️ Google auth failed');
     res.redirect(`${process.env.CLIENT_URL}/login?error=GoogleAuthFailed`);
   }
 };
 
 // ==========================
-// 👤 USER PROFILE
+// 👤 GET USER PROFILE
 // ==========================
 const getUserProfile = asyncHandler(async (req, res) => {
-  if (!req.user) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  res.status(200).json(req.user);
-});
-const user = await User.findOne({
-  resetPasswordToken: token,
-  resetPasswordExpire: { $gt: Date.now() },
+  const user = await User.findById(req.user._id).select('-password -resetPasswordToken -resetPasswordExpire');
+  if (!user) return res.status(404).json({ message: 'User profile not found.' });
+  res.status(200).json(user);
 });
 
 module.exports = {

@@ -1,26 +1,27 @@
 // server/middleware/errorMiddleware.js
 
-// Handles not found routes (e.g., a request to /api/users when /api/user is correct)
+/**
+ * Middleware to handle 404 - Not Found
+ */
 const notFound = (req, res, next) => {
-    const error = new Error(`Not Found - ${req.originalUrl}`);
-    res.status(404);
-    next(error); // Pass the error to the errorHandler
+  const error = new Error(`Not Found - ${req.originalUrl}`);
+  res.status(404);
+  next(error); // Pass to error handler
 };
 
-// Main error handling function
+/**
+ * General error handling middleware
+ */
 const errorHandler = (err, req, res, next) => {
-    // Determine the status code (default to 500 if it was 200)
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-    res.status(statusCode);
+  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
 
-    res.json({
-        message: err.message,
-        // Only provide stack trace in development environment for security
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    });
+  res.status(statusCode).json({
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+  });
 };
 
 module.exports = {
-    notFound,
-    errorHandler,
+  notFound,
+  errorHandler,
 };

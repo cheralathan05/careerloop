@@ -6,11 +6,14 @@ const userSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Please add a name'],
+      trim: true,
     },
     email: {
       type: String,
       required: [true, 'Please add an email'],
       unique: true,
+      lowercase: true,
+      trim: true,
     },
     password: {
       type: String,
@@ -25,17 +28,18 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // Password reset fields
+    resetPasswordToken: String,
+    resetPasswordExpire: Date, // Matches controller logic
   },
   {
     timestamps: true,
   }
 );
 
-// --- ✅ Password Hashing Middleware (Pre-save Hook)
+// --- Password Hashing Middleware ---
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
-    return next(); // ✅ Added 'return' to stop execution
-  }
+  if (!this.isModified('password')) return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -46,9 +50,11 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-// --- ✅ Custom Method to Compare Passwords
+// --- Custom Method to Compare Passwords ---
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;

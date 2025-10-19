@@ -2,43 +2,43 @@
 
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User'); // Import your User model
+const User = require('../models/User');
 
 /**
- * Protects routes by verifying JWT in the Authorization header.
+ * Protect routes - requires valid JWT token
  */
 const protect = asyncHandler(async (req, res, next) => {
-    let token;
+  let token;
 
-    // Check for token in the headers: Bearer <token>
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-        try {
-            // Get token from header
-            token = req.headers.authorization.split(' ')[1];
+  // Check for token in headers: Authorization: Bearer <token>
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      // Extract token
+      token = req.headers.authorization.split(' ')[1];
 
-            // Verify token
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Get user from the token payload (excluding password)
-            req.user = await User.findById(decoded.id).select('-password');
+      // Attach user to request (exclude password)
+      req.user = await User.findById(decoded.id).select('-password');
 
-            if (!req.user) {
-                res.status(401); // Unauthorized
-                throw new Error('User not found');
-            }
+      if (!req.user) {
+        return res.status(401).json({ message: 'User not found' });
+      }
 
-            next();
-        } catch (error) {
-            console.error(error);
-            res.status(401);
-            throw new Error('Not authorized, token failed');
-        }
+      next();
+    } catch (error) {
+      console.error(error);
+      return res.status(401).json({ message: 'Not authorized, token failed' });
     }
+  }
 
-    if (!token) {
-        res.status(401);
-        throw new Error('Not authorized, no token');
-    }
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized, no token' });
+  }
 });
 
 module.exports = { protect };
