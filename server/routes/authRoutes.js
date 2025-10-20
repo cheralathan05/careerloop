@@ -1,3 +1,4 @@
+// server/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
@@ -15,7 +16,9 @@ const {
   resetPassword,
 } = require('../controllers/authController');
 
-// ----------------- PUBLIC ROUTES -----------------
+// ======================================================
+// 🔹 PUBLIC ROUTES
+// ======================================================
 
 // Standard authentication
 router.post('/signup', registerUser);
@@ -29,24 +32,32 @@ router.post('/verify-otp', validateOtp, verifyOtp);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
-// ----------------- GOOGLE OAUTH -----------------
+// ======================================================
+// 🔹 GOOGLE OAUTH ROUTES
+// ======================================================
 
-// Initiate Google login
+// Step 1️⃣: Initiate Google Login
 router.get(
   '/google',
-  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false, // we are using JWT, not sessions
+  })
 );
 
-// Google OAuth callback
+// Step 2️⃣: Google OAuth Callback
 router.get(
   '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/login', session: false }),
-  googleAuthSuccess
+  passport.authenticate('google', {
+    failureRedirect: `${process.env.CLIENT_URL}/login`,
+    session: false,
+  }),
+  googleAuthSuccess // Controller will issue JWT + redirect to frontend
 );
 
-// ----------------- PROTECTED ROUTES -----------------
-
-// User profile
+// ======================================================
+// 🔹 PROTECTED ROUTES
+// ======================================================
 router.get('/profile', protect, getUserProfile);
 
 module.exports = router;
