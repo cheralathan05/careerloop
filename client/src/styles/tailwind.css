@@ -6,12 +6,651 @@
 @tailwind utilities;
 
 /* --- 2. CUSTOM COMPONENTS LAYER (Best Practice) --- */
-
 @layer components {
     /* 🚨 CRITICAL: Use @layer components for custom classes like this */
     .min-h-screen-minus-nav {
         /* Adjust the 64px value to exactly match your Navbar's height. 
            (e.g., if your Navbar is py-3, check its calculated height) */
         min-height: calc(100vh - 64px); 
+    }
+
+    /* CareerLoop Logo Animation - Best-Ever Rotating Glow */
+    .careerloop-logo {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #6366f1;
+        text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        animation: careerloop-glow 3s infinite ease-in-out, careerloop-rotate 4s infinite linear;
+        transform-style: preserve-3d;
+        will-change: transform, text-shadow;
+    }
+
+    /* Floating Elements for Physics-Like Motion */
+    .floating-element {
+        animation: floating 4s infinite ease-in-out;
+    }
+
+    /* Particle Burst Effect */
+    .particle-burst {
+        position: relative;
+    }
+    .particle-burst::before {
+        content: '';
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: radial-gradient(circle, #fbbf24, transparent);
+        border-radius: 50%;
+        animation: particle-explode 1s infinite;
+        will-change: transform, opacity;
+    }
+
+    /* Interactive Hover Glow */
+    .hover-glow {
+        transition: text-shadow 0.3s ease, transform 0.3s ease;
+    }
+    .hover-glow:hover {
+        text-shadow: 0 0 20px rgba(99, 102, 241, 1), 0 0 40px rgba(99, 102, 241, 0.5);
+        transform: scale(1.1);
+    }
+
+    /* 3D Tilt Effect (Mouse-Tracking Inspired) */
+    .tilt-3d {
+        transform-style: preserve-3d;
+        transition: transform 0.1s ease;
+    }
+    .tilt-3d:hover {
+        transform: rotateX(15deg) rotateY(15deg);
+    }
+
+    /* Color-Shifting Text */
+    .color-shift {
+        animation: color-cycle 2s infinite linear;
+    }
+
+    /* Pulsing Shadow */
+    .pulse-shadow {
+        animation: pulse-shadow 2s infinite ease-in-out;
+    }
+
+    /* Draggable Element (CSS-Based Drag Simulation) */
+    .draggable {
+        cursor: grab;
+        transition: transform 0.2s ease;
+    }
+    .draggable:active {
+        cursor: grabbing;
+        transform: scale(0.95);
+    }
+
+    /* Typing Cursor Animation */
+    .typing-cursor {
+        animation: blink 0.5s infinite;
+    }
+
+    /* Background Particle Animation */
+    .animated-bg {
+        position: relative;
+        overflow: hidden;
+    }
+    .animated-bg::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.1), transparent);
+        animation: bg-float 5s infinite ease-in-out;
+        pointer-events: none;
+    }
+
+    /* Step Transition Animation */
+    .step-transition {
+        animation: slide-in 0.8s ease-out;
+    }
+
+    /* Progress Bar Animation */
+    .progress-bar {
+        animation: progress-fill 1s ease-out;
+    }
+
+    /* Button Hover Effects */
+    .btn-enhanced {
+        transition: all 0.3s ease;
+    }
+    .btn-enhanced:hover {
+        transform: scale(1.05) rotate(5deg);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    /* Card Hover Physics */
+    .card-physics {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card-physics:hover {
+        transform: translateY(-10px) rotateX(10deg);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Separator Animation */
+    .separator-animated {
+        animation: separator-expand 0.5s ease-out;
+    }
+
+    /* Link Color Change */
+    .link-enhanced {
+        transition: color 0.2s ease, transform 0.2s ease;
+    }
+    .link-enhanced:hover {
+        color: #4f46e5;
+        transform: scale(1.05);
+    }
+
+    /* Additional Custom Classes for Expansion */
+    .fade-in-up {
+        animation: fade-in-up 1s ease-out;
+    }
+
+    .bounce-in {
+        animation: bounce-in 0.6s ease-out;
+    }
+
+    .scale-in {
+        animation: scale-in 0.5s ease-out;
+    }
+
+    .rotate-in {
+        animation: rotate-in 0.7s ease-out;
+    }
+
+    .slide-left {
+        animation: slide-left 0.8s ease-out;
+    }
+
+    .slide-right {
+        animation: slide-right 0.8s ease-out;
+    }
+
+    .flip-in {
+        animation: flip-in 0.6s ease-out;
+    }
+
+    .zoom-in {
+        animation: zoom-in 0.5s ease-out;
+    }
+
+    .wobble {
+        animation: wobble 1s infinite ease-in-out;
+    }
+
+    .heartbeat {
+        animation: heartbeat 1.5s infinite ease-in-out;
+    }
+
+    .shake {
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .jello {
+        animation: jello 0.9s ease-in-out;
+    }
+
+    .pulse {
+        animation: pulse 2s infinite;
+    }
+
+    .rubber-band {
+        animation: rubber-band 0.8s ease-out;
+    }
+
+    .swing {
+        animation: swing 1s ease-out;
+    }
+
+    .tada {
+        animation: tada 1s ease-out;
+    }
+
+    .bounce {
+        animation: bounce 1s infinite;
+    }
+
+    .flash {
+        animation: flash 1s infinite;
+    }
+
+    .head-shake {
+        animation: head-shake 1s ease-out;
+    }
+
+    .hinge {
+        animation: hinge 2s ease-out;
+    }
+
+    .jack-in-the-box {
+        animation: jack-in-the-box 0.8s ease-out;
+    }
+
+    .roll-in {
+        animation: roll-in 0.8s ease-out;
+    }
+
+    .roll-out {
+        animation: roll-out 0.8s ease-out;
+    }
+
+    .light-speed-in {
+        animation: light-speed-in 0.5s ease-out;
+    }
+
+    .light-speed-out {
+        animation: light-speed-out 0.5s ease-out;
+    }
+
+    .slide-in-down {
+        animation: slide-in-down 0.5s ease-out;
+    }
+
+    .slide-in-up {
+        animation: slide-in-up 0.5s ease-out;
+    }
+
+    .slide-out-down {
+        animation: slide-out-down 0.5s ease-out;
+    }
+
+    .slide-out-up {
+        animation: slide-out-up 0.5s ease-out;
+    }
+
+    .zoom-in-down {
+        animation: zoom-in-down 0.5s ease-out;
+    }
+
+    .zoom-in-up {
+        animation: zoom-in-up 0.5s ease-out;
+    }
+
+    .zoom-out-down {
+        animation: zoom-out-down 0.5s ease-out;
+    }
+
+    .zoom-out-up {
+        animation: zoom-out-up 0.5s ease-out;
+    }
+
+    .rotate-in-down-left {
+        animation: rotate-in-down-left 0.6s ease-out;
+    }
+
+    .rotate-in-down-right {
+        animation: rotate-in-down-right 0.6s ease-out;
+    }
+
+    .rotate-in-up-left {
+        animation: rotate-in-up-left 0.6s ease-out;
+    }
+
+    .rotate-in-up-right {
+        animation: rotate-in-up-right 0.6s ease-out;
+    }
+
+    .rotate-out-down-left {
+        animation: rotate-out-down-left 0.6s ease-out;
+    }
+
+    .rotate-out-down-right {
+        animation: rotate-out-down-right 0.6s ease-out;
+    }
+
+    .rotate-out-up-left {
+        animation: rotate-out-up-left 0.6s ease-out;
+    }
+
+    .rotate-out-up-right {
+        animation: rotate-out-up-right 0.6s ease-out;
+    }
+
+    .flip-in-x {
+        animation: flip-in-x 0.6s ease-out;
+    }
+
+    .flip-in-y {
+        animation: flip-in-y 0.6s ease-out;
+    }
+
+    .flip-out-x {
+        animation: flip-out-x 0.6s ease-out;
+    }
+
+    .flip-out-y {
+        animation: flip-out-y 0.6s ease-out;
+    }
+
+    .perspective {
+        perspective: 1000px;
+    }
+
+    .transform-3d {
+        transform-style: preserve-3d;
+    }
+
+    .backface-hidden {
+        backface-visibility: hidden;
+    }
+
+    .gpu-accelerated {
+        transform: translateZ(0);
+        will-change: transform;
+    }
+}
+
+/* --- 3. UTILITIES LAYER (For Advanced Animations) --- */
+@layer utilities {
+    /* CareerLoop-Specific Utilities */
+    .animate-careerloop-glow {
+        animation: careerloop-glow 3s infinite ease-in-out;
+    }
+
+    .animate-careerloop-rotate {
+        animation: careerloop-rotate 4s infinite linear;
+    }
+
+    .animate-floating {
+        animation: floating 4s infinite ease-in-out;
+    }
+
+    .animate-particle-explode {
+        animation: particle-explode 1s infinite;
+    }
+
+    .animate-color-cycle {
+        animation: color-cycle 2s infinite linear;
+    }
+
+    .animate-pulse-shadow {
+        animation: pulse-shadow 2s infinite ease-in-out;
+    }
+
+    .animate-blink {
+        animation: blink 0.5s infinite;
+    }
+
+    .animate-bg-float {
+        animation: bg-float 5s infinite ease-in-out;
+    }
+
+    .animate-slide-in {
+        animation: slide-in 0.8s ease-out;
+    }
+
+    .animate-progress-fill {
+        animation: progress-fill 1s ease-out;
+    }
+
+    .animate-separator-expand {
+        animation: separator-expand 0.5s ease-out;
+    }
+
+    .animate-fade-in-up {
+        animation: fade-in-up 1s ease-out;
+    }
+
+    .animate-bounce-in {
+        animation: bounce-in 0.6s ease-out;
+    }
+
+    .animate-scale-in {
+        animation: scale-in 0.5s ease-out;
+    }
+
+    .animate-rotate-in {
+        animation: rotate-in 0.7s ease-out;
+    }
+
+    .animate-slide-left {
+        animation: slide-left 0.8s ease-out;
+    }
+
+    .animate-slide-right {
+        animation: slide-right 0.8s ease-out;
+    }
+
+    .animate-flip-in {
+        animation: flip-in 0.6s ease-out;
+    }
+
+    .animate-zoom-in {
+        animation: zoom-in 0.5s ease-out;
+    }
+
+    .animate-wobble {
+        animation: wobble 1s infinite ease-in-out;
+    }
+
+    .animate-heartbeat {
+        animation: heartbeat 1.5s infinite ease-in-out;
+    }
+
+    .animate-shake {
+        animation: shake 0.5s ease-in-out;
+    }
+
+    .animate-jello {
+        animation: jello 0.9s ease-in-out;
+    }
+
+    .animate-rubber-band {
+        animation: rubber-band 0.8s ease-out;
+    }
+
+    .animate-swing {
+        animation: swing 1s ease-out;
+    }
+
+    .animate-tada {
+        animation: tada 1s ease-out;
+    }
+
+    .animate-bounce {
+        animation: bounce 1s infinite;
+    }
+
+    .animate-flash {
+        animation: flash 1s infinite;
+    }
+
+    .animate-head-shake {
+        animation: head-shake 1s ease-out;
+    }
+
+    .animate-hinge {
+        animation: hinge 2s ease-out;
+    }
+
+    .animate-jack-in-the-box {
+        animation: jack-in-the-box 0.8s ease-out;
+    }
+
+    .animate-roll-in {
+        animation: roll-in 0.8s ease-out;
+    }
+
+    .animate-roll-out {
+        animation: roll-out 0.8s ease-out;
+    }
+
+    .animate-light-speed-in {
+        animation: light-speed-in 0.5s ease-out;
+    }
+
+    .animate-light-speed-out {
+        animation: light-speed-out 0.5s ease-out;
+    }
+
+    .animate-slide-in-down {
+        animation: slide-in-down 0.5s ease-out;
+    }
+
+    .animate-slide-in-up {
+        animation: slide-in-up 0.5s ease-out;
+    }
+
+    .animate-slide-out-down {
+        animation: slide-out-down 0.5s ease-out;
+    }
+
+    .animate-slide-out-up {
+        animation: slide-out-up 0.5s ease-out;
+    }
+
+    .animate-zoom-in-down {
+        animation: zoom-in-down 0.5s ease-out;
+    }
+
+    .animate-zoom-in-up {
+        animation: zoom-in-up 0.5s ease-out;
+    }
+
+    .animate-zoom-out-down {
+        animation: zoom-out-down 0.5s ease-out;
+    }
+
+    .animate-zoom-out-up {
+        animation: zoom-out-up 0.5s ease-out;
+    }
+
+    .animate-rotate-in-down-left {
+        animation: rotate-in-down-left 0.6s ease-out;
+    }
+
+    .animate-rotate-in-down-right {
+        animation: rotate-in-down-right 0.6s ease-out;
+    }
+
+    .animate-rotate-in-up-left {
+        animation: rotate-in-up-left 0.6s ease-out;
+    }
+
+    .animate-rotate-in-up-right {
+        animation: rotate-in-up-right 0.6s ease-out;
+    }
+
+    .animate-rotate-out-down-left {
+        animation: rotate-out-down-left 0.6s ease-out;
+    }
+
+    .animate-rotate-out-down-right {
+        animation: rotate-out-down-right 0.6s ease-out;
+    }
+
+    .animate-rotate-out-up-left {
+        animation: rotate-out-up-left 0.6s ease-out;
+    }
+
+    .animate-rotate-out-up-right {
+        animation: rotate-out-up-right 0.6s ease-out;
+    }
+
+    .animate-flip-in-x {
+        animation: flip-in-x 0.6s ease-out;
+    }
+
+    .animate-flip-in-y {
+        animation: flip-in-y 0.6s ease-out;
+    }
+
+    .animate-flip-out-x {
+        animation: flip-out-x 0.6s ease-out;
+    }
+
+    .animate-flip-out-y {
+        animation: flip-out-y 0.6s ease-out;
+    }
+}
+
+/* --- 4. KEYFRAMES (The Heart of Best-Ever Animations) --- */
+@keyframes careerloop-glow {
+    0%, 100% {
+        text-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 30px rgba(99, 102, 241, 1), 0 0 60px rgba(99, 102, 241, 0.5);
+    }
+}
+
+@keyframes careerloop-rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes floating {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+}
+
+@keyframes particle-explode {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1) rotate(180deg);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes color-cycle {
+    0% {
+        color: #6366f1;
+    }
+    25% {
+        color: #ec4899;
+    }
+    50% {
+        color: #10b981;
+    }
+    75% {
+        color: #f59e0b;
+    }
+    100% {
+        color: #ef4444;
+    }
+}
+
+@keyframes pulse-shadow {
+    0%, 100% {
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+}
+
+@keyframes blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0;
+    }
+}
+
+@keyframes bg-float {
+    0%, 100% {
+        transform: translateY(0px) scale(1);
     }
 }
