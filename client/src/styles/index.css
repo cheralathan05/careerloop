@@ -1,0 +1,58 @@
+/* src/styles/index.css - Global Styles */
+
+:root {
+    /* Default (Light) Theme Variables */
+    --color-primary: #007bff;
+    --color-secondary: #6c757d;
+    --color-background: #ffffff;
+    --color-surface: #f8f9fa;
+    --color-text: #212529;
+    --color-success: #28a745;
+    --color-error: #dc3545;
+}
+
+[data-theme="dark"] {
+    --color-primary: #4a90e2;
+    --color-secondary: #adb5bd;
+    --color-background: #121212;
+    --color-surface: #1e1e1e;
+    --color-text: #e0e0e0;
+    --color-success: #2e8b57;
+    --color-error: #ff6347;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Base Button Style */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.btn-cta {
+    background-color: var(--color-success);
+    color: white;
+    font-size: 1.1em;
+}
+
+.btn-disabled {
+    background-color: var(--color-secondary);
+    opacity: 0.6;
+    cursor: not-allowed;
+}

@@ -1,0 +1,38 @@
+/* src/styles/charts.css */
+
+.skill-progress-graph {
+    padding: 20px;
+    background-color: var(--color-surface);
+    border-radius: 8px;
+}
+
+.graph-area {
+    display: flex;
+    align-items: flex-end;
+    height: 150px;
+    gap: 10px;
+    padding-top: 10px;
+    border-bottom: 2px solid var(--color-text);
+}
+
+.data-point {
+    flex: 1;
+    background-color: var(--color-primary);
+    transition: height 0.5s;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.month-label {
+    position: absolute;
+    bottom: -20px;
+    font-size: 0.8em;
+}
+
+.ring-text {
+    font-size: 1.2em;
+    font-weight: bold;
+    fill: var(--color-text);
+}

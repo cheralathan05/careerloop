@@ -1,0 +1,27 @@
+/* src/styles/ai-chat.css */
+
+.ai-assistant-chat-mock {
+    border: 1px solid var(--color-surface);
+    border-radius: 8px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.messages-display {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+}
+
+.messages-display p {
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+
+.messages-display p:nth-child(odd) {
+    background-color: var(--color-surface); /* AI messages */
+}
