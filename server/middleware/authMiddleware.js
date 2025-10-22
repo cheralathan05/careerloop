@@ -1,42 +1,36 @@
 // server/middleware/authMiddleware.js
-
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 
 /**
  * Protect routes - requires valid JWT token
+ * Ensures that only authenticated users can access protected resources.
  */
 const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  // Check for token in headers: Authorization: Bearer <token>
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
+  // Check if token exists in Authorization header (Bearer <token>)
+  if (req.headers.authorization?.startsWith('Bearer')) {
     try {
-      // Extract token
       token = req.headers.authorization.split(' ')[1];
 
-      // Verify token
+      // Verify the JWT token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Attach user to request (exclude password)
+      // Attach user to the request (excluding password field)
       req.user = await User.findById(decoded.id).select('-password');
 
       if (!req.user) {
         return res.status(401).json({ message: 'User not found' });
       }
 
-      next();
+      next(); // ✅ Move to next middleware
     } catch (error) {
-      console.error(error);
-      return res.status(401).json({ message: 'Not authorized, token failed' });
+      console.error('JWT Verification Failed:', error);
+      return res.status(401).json({ message: 'Not authorized, token invalid' });
     }
-  }
-
-  if (!token) {
+  } else {
     return res.status(401).json({ message: 'Not authorized, no token' });
   }
 });

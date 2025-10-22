@@ -19,7 +19,7 @@ const generateAndSendOTP = async (email) => {
   // Delete any existing OTPs for this email
   await OTPModel.deleteMany({ email: user.email });
 
-  // Save new OTP (expires in 10 minutes)
+  // Save new OTP (no TTL, manual deletion after verification)
   await OTPModel.create({
     email: user.email,
     otp: otpValue,
@@ -30,13 +30,12 @@ const generateAndSendOTP = async (email) => {
     await sendEmail({
       to: user.email,
       subject: 'Your CareerLoop Verification Code',
-      text: `Your OTP is ${otpValue}. It will expire in 10 minutes.`,
+      text: `Your OTP is ${otpValue}.`,
       html: `
         <div style="font-family:sans-serif;line-height:1.5">
           <h2>Verify Your CareerLoop Account</h2>
           <p>Your One-Time Password (OTP) is:</p>
           <h1 style="letter-spacing:4px;">${otpValue}</h1>
-          <p>This code will expire in <b>10 minutes</b>.</p>
         </div>
       `,
     });
@@ -57,13 +56,13 @@ const generateAndSendOTP = async (email) => {
  * @returns {object} The verified user and a JWT token.
  */
 const verifyOTP = async (email, otp) => {
-  // Find valid OTP
+  // Find OTP record
   const otpRecord = await OTPModel.findOne({
     email: email.toLowerCase().trim(),
     otp,
   });
 
-  if (!otpRecord) throw new Error('Invalid or expired OTP.');
+  if (!otpRecord) throw new Error('Invalid OTP.');
 
   // Mark user as verified
   const user = await User.findOneAndUpdate(
@@ -74,7 +73,7 @@ const verifyOTP = async (email, otp) => {
 
   if (!user) throw new Error('User not found.');
 
-  // Delete OTP to prevent reuse
+  // Delete OTP after successful verification
   await OTPModel.deleteOne({ _id: otpRecord._id });
 
   // Generate JWT token

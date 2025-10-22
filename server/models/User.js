@@ -37,7 +37,10 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// --- Password Hashing Middleware ---
+// ======================================================
+// 🔹 Pre-save middleware to hash password
+// Only hashes if password field is modified
+// ======================================================
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
 
@@ -50,7 +53,9 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-// --- Custom Method to Compare Passwords ---
+// ======================================================
+// 🔹 Custom method to compare entered password with hashed password
+// ======================================================
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

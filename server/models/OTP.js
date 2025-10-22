@@ -17,11 +17,10 @@ const OTPSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true } // adds createdAt & updatedAt
+  { timestamps: true } // adds createdAt & updatedAt automatically
 );
 
-// Automatically delete OTPs after 10 minutes
-OTPSchema.index({ createdAt: 1 }, { expireAfterSeconds: 10 * 60 });
+// ✅ No TTL index — OTPs will not expire automatically
 
 const OTP = mongoose.model('OTP', OTPSchema);
 

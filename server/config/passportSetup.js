@@ -1,67 +1,72 @@
-// server/config/passportSetup.js
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
+// server/config/passportSetup.js (FINAL ES MODULE FIX ✅)
 
-// ======================================================
-// 🔹 1. Serialize user (store user ID in session)
-// ======================================================
-passport.serializeUser((user, done) => {
-  done(null, user.id);
-});
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import User from '../models/User.js'; 
+import generateToken from '../utils/generateToken.js'; 
 
-// ======================================================
-// 🔹 2. Deserialize user (fetch user from DB by ID)
-// ======================================================
-passport.deserializeUser(async (id, done) => {
-  try {
-    const user = await User.findById(id);
-    done(null, user);
-  } catch (error) {
-    done(error, null);
-  }
-});
+// This structure EXPORTS the initialization function, which is called *after* dotenv.config()
+export const initPassportSetup = () => {
 
-// ======================================================
-// 🔹 3. Google OAuth Strategy
-// ======================================================
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      // ⚠️ MUST match your Google Cloud redirect URI
-      callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/google/callback`,
-    },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const email = profile.emails[0].value.toLowerCase().trim();
+    // ======================================================
+    // 🔹 1. Serialize user (store user ID in session)
+    // ======================================================
+    passport.serializeUser((user, done) => {
+      done(null, user.id);
+    });
 
-        // 🔍 Check if user already exists
-        let user = await User.findOne({ email });
+    // ======================================================
+    // 🔹 2. Deserialize user (fetch user from DB by ID)
+    // ======================================================
+    passport.deserializeUser(async (id, done) => {
+      try {
+        const user = await User.findById(id).select('-password');
+        done(null, user);
+      } catch (error) {
+        done(error, null);
+      }
+    });
 
-        if (user) return done(null, user);
+    // ======================================================
+    // 🔹 3. Google OAuth Strategy
+    // ======================================================
+    passport.use(
+      new GoogleStrategy(
+        {
+          clientID: process.env.GOOGLE_CLIENT_ID, // NOW reads defined value
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          callbackURL: `${process.env.SERVER_URL || 'http://localhost:5000'}/api/auth/google/callback`,
+        },
+        async (accessToken, refreshToken, profile, done) => {
+          try {
+            if (!profile.emails || !profile.emails.length) {
+              throw new Error('Google account has no public email');
+            }
+            const email = profile.emails[0].value.toLowerCase().trim();
+            let user = await User.findOne({ email });
 
-        // 🆕 Create user if not exists
-        user = await User.create({
-          name: profile.displayName,
-          email,
-          password: 'GOOGLE_OAUTH_USER', // Placeholder password (not used)
-          isVerified: true, // Google guarantees verified emails
-          avatar: profile.photos?.[0]?.value || null,
-        });
+            if (!user) {
+              user = await User.create({
+                name: profile.displayName,
+                email,
+                password: 'GOOGLE_OAUTH_USER',
+                isVerified: true,
+                authProvider: 'google',
+              });
+            }
 
-        done(null, user);
-      } catch (error) {
-        console.error('❌ Google OAuth Error:', error);
-        done(error, null);
-      }
-    }
-  )
-);
+            // Attach token temporarily for callback usage
+            user._doc.token = generateToken(user._id);
 
-// ======================================================
-// ✅ Export — ensures the strategy is registered globally
-// ======================================================
-module.exports = passport;
+            return done(null, user);
+          } catch (error) {
+            console.error('❌ Google OAuth Error:', error.message);
+            return done(error, null);
+          }
+        }
+      )
+    );
+};
+
+// No need for 'module.exports = passport;' since we export the function above.
+// The passport instance is available globally after initPassportSetup() is run.

@@ -1,20 +1,23 @@
-// server/routes/authRoutes.js
-const express = require('express');
-const router = express.Router();
-const passport = require('passport');
-const { protect } = require('../middleware/authMiddleware');
-const { validateOtp } = require('../middleware/otpMiddleware');
+// server/routes/authRoutes.js (FINAL CORRECTED VERSION ✅)
 
-const {
-  registerUser,
-  loginUser,
-  sendOtp,
-  verifyOtp,
-  googleAuthSuccess,
-  getUserProfile,
-  forgotPassword,
-  resetPassword,
-} = require('../controllers/authController');
+import express from 'express';
+import passport from 'passport';
+import { protect } from '../middleware/authMiddleware.js';
+import { validateOtp } from '../middleware/otpMiddleware.js';
+
+// 1. ✅ CORRECT IMPORT: Use NAMED IMPORTS to match 'export { ... }' in authController.js
+import {
+    registerUser,
+    loginUser,
+    sendOtp,
+    verifyOtp,
+    googleAuthSuccess,
+    getUserProfile,
+    forgotPassword,
+    resetPassword,
+} from '../controllers/authController.js'; 
+
+const router = express.Router();
 
 // ======================================================
 // 🔹 PUBLIC ROUTES
@@ -38,26 +41,31 @@ router.post('/reset-password', resetPassword);
 
 // Step 1️⃣: Initiate Google Login
 router.get(
-  '/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    session: false, // we are using JWT, not sessions
-  })
+  '/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false, // using JWT, not sessions
+  })
 );
 
 // Step 2️⃣: Google OAuth Callback
 router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: `${process.env.CLIENT_URL}/login`,
-    session: false,
-  }),
-  googleAuthSuccess // Controller will issue JWT + redirect to frontend
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: `${process.env.CLIENT_URL}/login`,
+    session: false,
+  }),
+  googleAuthSuccess // Issues JWT + redirects to frontend
 );
 
 // ======================================================
 // 🔹 PROTECTED ROUTES
 // ======================================================
+
+// Example: fetch authenticated user's profile
 router.get('/profile', protect, getUserProfile);
 
-module.exports = router;
+// Future onboarding-related protected routes can be added here
+// e.g., router.get('/onboarding/status', protect, getOnboardingStatus);
+
+export default router;
