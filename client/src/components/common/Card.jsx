@@ -1,44 +1,21 @@
-// client/src/components/common/Card.jsx
-
 import React from 'react';
 
-const Card = ({ 
-  title, 
-  description, 
-  children, 
-  className = '', 
-  // Enhancement 1: Allow consumers to specify the HTML heading tag (e.g., 'h2', 'h3')
-  titleAs = 'h3', 
-  ...rest 
-}) => {
-  
-  // Dynamically create the Title component based on the prop
-  const TitleTag = titleAs; 
-  
-  return (
-    // Enhancement 2: Default styling with slightly better depth
-    <div 
-      className={`p-6 bg-white shadow-xl rounded-xl border border-gray-100 ${className}`}
-      {...rest}
-    >
-      {/* Ensure the card title is rendered as the correct semantic element
-      */}
-      {title && (
-        <TitleTag className="text-xl font-bold mb-3 text-gray-800">
-          {title}
-        </TitleTag>
-      )}
-      
-      {description && (
-        <p className="text-gray-500 mb-4 text-sm">
-          {description}
-        </p>
-      )}
-      
-      {/* This is where the primary content (AuthForms, Dashboard widgets, etc.) will go */}
-      {children}
-    </div>
-  );
+/**
+ * @desc Reusable card container for clean data display.
+ */
+export const Card = ({ children, title, className = '', titleIcon: TitleIcon, ...props }) => {
+    return (
+        <div 
+            className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 ${className}`}
+            {...props}
+        >
+            {title && (
+                <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white flex items-center">
+                    {TitleIcon && <TitleIcon className="w-6 h-6 mr-3 text-indigo-600 dark:text-indigo-400" />}
+                    {title}
+                </h2>
+            )}
+            {children}
+        </div>
+    );
 };
-
-export default Card;

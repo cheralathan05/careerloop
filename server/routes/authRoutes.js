@@ -1,11 +1,14 @@
-// server/routes/authRoutes.js (FINAL CORRECTED VERSION ✅)
+// server/routes/authRoutes.js (FINAL, FULLY SYNCHRONIZED VERSION ✅)
 
 import express from 'express';
+const router = express.Router();
 import passport from 'passport';
+
+// Import necessary dependencies with correct paths and extensions
 import { protect } from '../middleware/authMiddleware.js';
 import { validateOtp } from '../middleware/otpMiddleware.js';
 
-// 1. ✅ CORRECT IMPORT: Use NAMED IMPORTS to match 'export { ... }' in authController.js
+// Import all controller functions via named import (must match controller export structure)
 import {
     registerUser,
     loginUser,
@@ -17,55 +20,23 @@ import {
     resetPassword,
 } from '../controllers/authController.js'; 
 
-const router = express.Router();
-
 // ======================================================
-// 🔹 PUBLIC ROUTES
+// 🔹 ROUTE DEFINITIONS
 // ======================================================
 
-// Standard authentication
 router.post('/signup', registerUser);
 router.post('/login', loginUser);
-
-// OTP routes
 router.post('/send-otp', sendOtp);
 router.post('/verify-otp', validateOtp, verifyOtp);
-
-// Forgot / Reset password
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
-// ======================================================
-// 🔹 GOOGLE OAUTH ROUTES
-// ======================================================
+// Google OAuth
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+router.get('/google/callback', passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login`, session: false }), googleAuthSuccess);
 
-// Step 1️⃣: Initiate Google Login
-router.get(
-  '/google',
-  passport.authenticate('google', {
-    scope: ['profile', 'email'],
-    session: false, // using JWT, not sessions
-  })
-);
-
-// Step 2️⃣: Google OAuth Callback
-router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    failureRedirect: `${process.env.CLIENT_URL}/login`,
-    session: false,
-  }),
-  googleAuthSuccess // Issues JWT + redirects to frontend
-);
-
-// ======================================================
-// 🔹 PROTECTED ROUTES
-// ======================================================
-
-// Example: fetch authenticated user's profile
+// Protected
 router.get('/profile', protect, getUserProfile);
 
-// Future onboarding-related protected routes can be added here
-// e.g., router.get('/onboarding/status', protect, getOnboardingStatus);
-
+// ✅ FIX: Use ES Module default export
 export default router;

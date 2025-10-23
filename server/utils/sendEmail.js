@@ -1,37 +1,39 @@
-// server/utils/sendEmail.js (FINAL, ZERO-ERROR VERSION)
+// server/utils/sendEmail.js (FINAL ES MODULE VERSION)
 
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
+// NOTE: Assuming logger utility or custom console logs are available
 
 /**
- * Sends an email using either live SMTP credentials or a fallback Ethereal account for testing.
+ * @desc Sends an email using either live SMTP credentials or a fallback Ethereal account for testing.
  * @param {Object} options - { to, subject, text, html }
+ * @returns {Promise<Object>} The nodemailer info object.
  */
 const sendEmail = async (options) => {
     let transporter;
     let info;
-
-    // 🚨 FIX: Define isEtherealFallback using const/let outside the try block
-    const isEtherealFallback = !(process.env.EMAIL_HOST && process.env.EMAIL_USERNAME);
+    
+    // Check for required LIVE config credentials
+    const isEtherealFallback = !(process.env.EMAIL_HOST && process.env.EMAIL_USERNAME && process.env.EMAIL_PASSWORD);
 
     try {
         if (!isEtherealFallback) {
-            // --- Option A: Live/Mailtrap SMTP ---
+            // --- Option A: Live/Mailtrap/Prod SMTP ---
             transporter = nodemailer.createTransport({
                 host: process.env.EMAIL_HOST,
                 port: Number(process.env.EMAIL_PORT) || 587,
-                secure: Number(process.env.EMAIL_PORT) === 465, // true for 465, false for 587/2525
+                secure: Number(process.env.EMAIL_PORT) === 465, 
                 auth: {
                     user: process.env.EMAIL_USERNAME,
                     pass: process.env.EMAIL_PASSWORD,
                 },
-                // Add TLS option to prevent non-fatal SSL warnings
+                // Added for robustness against SSL warnings
                 tls: {
                     ciphers: 'SSLv3' 
                 }
             });
-            console.log('--- Using Live/Mailtrap SMTP ---');
+            console.log('--- Using Live/Prod SMTP ---');
         } else {
-            // --- Option B: Ethereal Fallback ---
+            // --- Option B: Ethereal Fallback (for local testing without a real SMTP service) ---
             const testAccount = await nodemailer.createTestAccount();
             transporter = nodemailer.createTransport({
                 host: 'smtp.ethereal.email',
@@ -42,16 +44,17 @@ const sendEmail = async (options) => {
                     pass: testAccount.pass,
                 },
             });
-            console.log('--- Using Ethereal (Free) for Email Testing ---');
+            console.log('--- Using Ethereal (Testing) ---');
         }
 
         // --- Mail Options ---
         const mailOptions = {
-            from: `"${process.env.FROM_NAME || 'Auth Flow'}" <${process.env.FROM_EMAIL || 'no-reply@test.com'}>`,
+            from: `"${process.env.FROM_NAME || 'CareerLoop'}" <${process.env.FROM_EMAIL || 'no-reply@careerloop.com'}>`,
             to: options.to,
             subject: options.subject,
             text: options.text,
-            html: options.html || `<p>${options.text}</p>`,
+            // Ensure HTML is prioritized or a fallback text is used
+            html: options.html || `<p>${options.text}</p>`, 
         };
 
         // --- Send Email ---
@@ -67,9 +70,10 @@ const sendEmail = async (options) => {
 
         return info;
     } catch (error) {
-        console.error('❌ Error sending email:', error.message);
-        throw new Error('Email sending failed. Please try again later.');
+        // Log the detailed error but throw a generic message for the API consumer
+        console.error('❌ FATAL ERROR sending email:', error.message);
+        throw new Error('Internal service error: Failed to send email.');
     }
 };
 
-module.exports = sendEmail;
+export default sendEmail;

@@ -1,101 +1,86 @@
-// src/pages/onboarding/OnboardingSummary.js
+import React from 'react';
+import { useOnboarding } from '../../../hooks/useOnboarding';
+import { OnboardingLayout } from '../../../components/layout/OnboardingLayout';
+import { Button } from '../../../components/common/Button';
+import { Card } from '../../../components/common/Card';
+import { SkillRadarChart } from '../../../components/charts/SkillRadarChart';
+import { SkillProgressGraph } from '../../../components/charts/SkillProgressGraph';
+import { AILoader } from '../../../components/loaders/AILoader';
+import { ArrowRight, Zap, BookOpen, CheckCircle } from 'lucide-react';
+import { AlertBox } from '../../../components/ui/AlertBox';
 
-import React, { useEffect, useState } from 'react';
-import useOnboarding from '../../hooks/useOnboarding';
-import OnboardingLayout from '../../components/layout/OnboardingLayout';
-import Button from '../../components/ui/Button';
-import Card from '../../components/ui/Card';
-import SkillRadarChart from '../../components/charts/SkillRadarChart';
-import MentorSuggestionList from '../../components/onboarding/MentorSuggestionList';
-import CourseSuggestionCard from '../../components/onboarding/CourseSuggestionCard';
-import onboardingService from '../../services/onboardingService';
+/**
+ * @desc Phase 5: Displays the final AI-generated summary report.
+ */
+const OnboardingSummaryPage = () => {
+    const { 
+        onboardingState: { summary, skillScores }, 
+        nextPhase, 
+        isLoading, 
+        onboardingError 
+    } = useOnboarding();
 
-const OnboardingSummary = () => {
-    const { state, nextPhase, updateOnboardingState } = useOnboarding();
-    const [isLoading, setIsLoading] = useState(false);
+    // Safely calculate average score for the progress graph
+    const totalScoreItems = Object.keys(skillScores).length;
+    const averageScore = totalScoreItems 
+        ? Object.values(skillScores).reduce((sum, score) => sum + score, 0) / totalScoreItems 
+        : 0;
 
-    // Assume skillAssessmentScores are calculated in Phase 8
-    const skillData = state.skillAssessmentScores || {
-        labels: ['Core Concepts', 'Problem Solving', 'Tool Proficiency', 'Domain Specific'],
-        scores: [65, 75, 40, 55], // Mock Scores if coming directly from Phase 7
-        gaps: ['Tool Proficiency', 'Domain Specific']
-    };
+    if (isLoading || !summary) return <OnboardingLayout title="Analyzing Results"><AILoader text="Compiling final report and personalized recommendations..." /></OnboardingLayout>;
+    
+    if (onboardingError) return <OnboardingLayout title="Error"><AlertBox type="error" message={onboardingError} /></OnboardingLayout>;
 
-    // AI Interaction: Fetch recommendations after assessment is done (Phase 8 completed)
-    useEffect(() => {
-        const fetchRecommendations = async () => {
-            if (state.aiRecommendations) return; // Skip if already fetched
-
-            setIsLoading(true);
-            try {
-                // Mock API call to get personalized suggestions
-                const recommendations = await onboardingService.getAIRecommendations(skillData);
-                updateOnboardingState({ aiRecommendations: recommendations });
-            } catch (error) {
-                console.error("Error fetching AI recommendations:", error);
-                // Fallback structure
-                updateOnboardingState({ 
-                    aiRecommendations: { 
-                        tasks: ["Complete first module in Python Basics.", "Practice 2 easy coding challenges."],
-                        mentors: [{ id: 1, name: "Alice J." }, { id: 2, name: "Bob K." }],
-                        courses: [{ name: "Advanced React Hooks", provider: "Udemy" }]
-                    } 
-                });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchRecommendations();
-    }, [state.aiRecommendations, updateOnboardingState, skillData]);
-
-    const handleNext = () => {
-        // System Action: Prepare session for AI chat and move to next phase (10)
-        nextPhase();
-    };
-
-    const completionPercentage = Math.round((9 / 10) * 100); // Phase 9 / Total 10
-
-    if (isLoading) {
-        return <OnboardingLayout><OnboardingLoader message="Generating personalized learning blueprint..." /></OnboardingLayout>;
-    }
+    const { radar: radarData, recommendedTasks: tasks, suggestedCourses: courses } = summary;
 
     return (
-        <OnboardingLayout>
-            <div className="onboarding-summary-page">
-                <h2>Phase 9: Your Career Blueprint is Ready!</h2>
-                <div className="summary-layout">
-                    
-                    {/* 1. Skill Radar Chart */}
-                    <Card className="chart-panel">
-                        <h3>Skill Radar</h3>
-                        <SkillRadarChart data={skillData} />
-                        <p className="completion-info">Onboarding Progress: **{completionPercentage}%** Complete</p>
+        <OnboardingLayout title="Your Personalized Summary" className="max-w-4xl">
+            <h2 className="text-2xl font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center">
+                <Zap className="w-6 h-6 mr-2" /> Key Insights
+            </h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                
+                {/* Radar Chart (Col 1 & 2) */}
+                <Card className="lg:col-span-2">
+                    <SkillRadarChart data={radarData} title="Proficiency Across Domains" />
+                </Card>
+
+                {/* Overall Score/Tasks (Col 3) */}
+                <div className="space-y-6">
+                    <SkillProgressGraph 
+                        percentage={averageScore * 10} // Assuming scores are 0-10, scale to 0-100
+                        label="Overall Assessment Score"
+                        detail={`Based on your performance in ${totalScoreItems} skill categories.`}
+                    />
+
+                    <Card title="Immediate Next Steps" titleIcon={CheckCircle} className="h-full">
+                        <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
+                            {tasks.map((task, index) => (
+                                <li key={index} className="ml-2">{task}</li>
+                            ))}
+                        </ul>
                     </Card>
-
-                    {/* 2. Strengths and Gaps */}
-                    <Card className="summary-info">
-                        <h3>Insights</h3>
-                        <p><strong>Strengths:</strong> {skillData.labels.filter((_, i) => skillData.scores[i] >= 70).join(', ') || 'N/A'}</p>
-                        <p className="gap-alert">
-                            <strong>Gaps to Close:</strong> {skillData.gaps.join(', ') || 'None identified!'}
-                        </p>
-                    </Card>
-
-                    {/* 3. AI Recommendations */}
-                    <div className="recommendations-grid">
-                        <CourseSuggestionCard courses={state.aiRecommendations?.courses} />
-                        <MentorSuggestionList mentors={state.aiRecommendations?.mentors} />
-                    </div>
-
                 </div>
-
-                <Button onClick={handleNext} variant="primary" size="large">
-                    Next: Speak with AI Onboarding Assistant (10)
-                </Button>
             </div>
+            
+            {/* Recommended Courses (Full Width) */}
+            <Card title="Recommended Courses" titleIcon={BookOpen}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {courses.map((course, index) => (
+                        <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border dark:border-gray-600">
+                            <a href="#" target="_blank" className="text-indigo-600 hover:underline dark:text-indigo-400 font-medium">
+                                {course}
+                            </a>
+                        </div>
+                    ))}
+                </div>
+            </Card>
+
+            <Button onClick={nextPhase} icon={ArrowRight} className="w-full mt-6">
+                Continue to AI Assistant Chat
+            </Button>
         </OnboardingLayout>
     );
 };
 
-export default OnboardingSummary;
+export default OnboardingSummaryPage;

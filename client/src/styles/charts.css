@@ -1,0 +1,16 @@
+/* Styles specific to Recharts/SVG outputs like SkillRadarChart.
+*/
+
+/* Ensure chart axis labels and text look good in both themes */
+.recharts-default-tooltip {
+  /* Tailwind utility classes are often passed via props, but this is a fallback */
+  background-color: rgba(31, 41, 55, 0.9) !important; /* Dark Gray for tooltips */
+  border-radius: 8px !important;
+  color: #fff !important;
+  border: none !important;
+}
+
+.recharts-tooltip-label {
+  font-weight: 600;
+  color: #f3f4f6 !important;
+}

@@ -1,44 +1,26 @@
-// client/src/components/routes/ProtectedRoute.jsx
-
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom'; // 🚨 NEW: Import useLocation
-import { useAuth } from '../../context/AuthContext';
-import AuthLoader from '../auth/AuthLoader';
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth'; // Assuming this hook exists
+import AuthLoader from '../components/auth/AuthLoader'; // Full-screen loading component
 
 /**
- * ProtectedRoute
- * Wraps routes that require authentication.
- * - Shows a loading spinner while auth state is being determined.
- * - Redirects to /login if the user is not authenticated.
- * - Renders child routes (via <Outlet />) if authenticated.
- * * NOTE: This component is a wrapper and does not take 'children' as a prop
- * when used with modern React Router (v6+).
+ * @desc Component to protect routes, ensuring the user is authenticated.
+ * If the user is not authenticated, they are redirected to the login page.
  */
-const ProtectedRoute = () => {
-    const { isAuthenticated, isLoading } = useAuth();
-    const location = useLocation(); // To get the current path
-
-    // 1️⃣ Show loader while checking auth status
-    if (isLoading) {
-        // You can optionally return the AuthLoader from a dedicated component wrapping the app too
+export const ProtectedRoute = () => {
+    const { user, isAuthReady, token } = useAuth();
+    
+    // 1. Show a full-screen loader while checking the session status
+    if (!isAuthReady) {
         return <AuthLoader />;
     }
 
-    // 2️⃣ If authenticated, render nested routes
-    if (isAuthenticated) {
+    // 2. If the user is authenticated (has user object and a token), render the child routes
+    if (user && token) {
         return <Outlet />;
     }
 
-    // 3️⃣ Not authenticated → redirect to login
-    // ENHANCEMENT: Pass the current location state to the login route. 
-    // This allows the login form to redirect the user back to where they came from (e.g., /dashboard)
-    return (
-        <Navigate 
-            to="/login" 
-            replace 
-            state={{ from: location }} // Pass state to preserve intended destination
-        />
-    );
+    // 3. Otherwise, redirect to the login page
+    // The replace prop ensures the current (protected) page isn't added to history.
+    return <Navigate to="/login" replace />;
 };
-
-export default ProtectedRoute;

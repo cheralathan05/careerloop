@@ -1,73 +1,128 @@
-// client/src/App.jsx
-
 import React from 'react';
-// Correct import structure for React Router v6
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'; 
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast'; // For global notifications
 
-// --- Context & Layout ---
-import { AuthProvider } from './context/AuthContext.jsx'; // Context Provider
-import Navbar from './components/layout/Navbar.jsx';       // Global Navigation
-import Footer from './components/layout/Footer.jsx';       // Global Footer
-import ProtectedRoute from './components/routes/ProtectedRoute.jsx'; // Security Wrapper
+// --- Context Providers ---
+import { AuthProvider } from './context/AuthContext';
+import { OnboardingProvider } from './context/OnboardingContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { AIProvider } from './context/AIContext';
 
-// --- Public Pages ---
-import Login from './pages/auth/Login.jsx';
-import Signup from './pages/auth/Signup.jsx';
-import VerifyOTP from './pages/auth/VerifyOTP.jsx';
-import ForgotPassword from './pages/auth/ForgotPassword.jsx';
-import ResetPassword from './pages/auth/ResetPassword.jsx';
-import DashboardBeforeLogin from './pages/auth/DashboardBeforeLogin.jsx'; // Landing Page
-import DashboardAfterLogin from './pages/auth/DashboardAfterLogin.jsx';   // Private Dashboard
+// --- Layout & Security ---
+import { Navbar } from './components/layout/Navbar';
+import { Footer } from './components/layout/Footer';
+import { ProtectedRoute } from './routes/ProtectedRoute';
+import { useAuth } from './hooks/useAuth'; 
+import { useOnboarding } from './hooks/useOnboarding'; 
+import { ONBOARDING_FLOW_MAP } from './utils/constants'; // Flow map for navigation logic
 
-// --- Utility Pages ---
-import NotFound from './pages/NotFound.jsx';
+// --- Public Auth Pages ---
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
+import VerifyOTP from './pages/auth/VerifyOTP';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import DashboardBeforeLogin from './pages/dashboard/DashboardBeforeLogin'; 
+import NotFound from './pages/NotFound';
+
+// --- Protected Onboarding Pages ---
+import WelcomePage from './pages/onboarding/Welcome';
+import UserDetailsFormPage from './pages/onboarding/UserDetailsForm';
+import DomainSelectionPage from './pages/onboarding/DomainSelection';
+import SkillAssessmentPage from './pages/onboarding/SkillAssessment';
+import OnboardingSummaryPage from './pages/onboarding/OnboardingSummary';
+import AIOnboardingAssistantPage from './pages/onboarding/AIOnboardingAssistant';
+import TransitionToDashboardPage from './pages/onboarding/TransitionToDashboard';
+
+// --- Protected Dashboard Page ---
+import DashboardHomePage from './pages/dashboard/DashboardHome';
+
+// Component that wraps the router logic to use hooks
+const AppRouterWrapper = () => {
+    const { user, isAuthReady } = useAuth();
+    // Assuming isComplete and currentPhase are exposed by useOnboarding
+    const { onboardingState: { isComplete, currentPhase } } = useOnboarding();
+    
+    // Logic to determine the correct redirection path after login/verification
+    const getRedirectPath = () => {
+        if (!user || !isAuthReady) return '/login'; 
+        
+        if (isComplete) return '/dashboard'; 
+        
+        // Find the path corresponding to the current phase number
+        const currentStep = ONBOARDING_FLOW_MAP.find(step => step.phase === currentPhase);
+        if (currentStep) {
+            // E.g., Phase 2, "User Details" -> "/onboarding/details"
+            return `/onboarding/${currentStep.name.toLowerCase().replace(/\s/g, '')}`;
+        }
+        return '/onboarding/welcome'; 
+    };
+
+    return (
+        <Routes>
+            
+            {/* Redirect root path based on authentication/onboarding status */}
+            <Route path="/" element={<Navigate to={getRedirectPath()} replace />} />
+            
+            {/* --- Public Authentication Routes --- */}
+            <Route path="/landing" element={<DashboardBeforeLogin />} /> 
+            <Route path="/login" element={user ? <Navigate to={getRedirectPath()} replace /> : <Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/verify-otp" element={<VerifyOTP />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* --- Protected Routes --- */}
+            <Route element={<ProtectedRoute />}>
+                
+                {/* Onboarding Flow Routes (Must be accessed sequentially) */}
+                <Route path="/onboarding/welcome" element={<WelcomePage />} />
+                <Route path="/onboarding/userdetails" element={<UserDetailsFormPage />} />
+                <Route path="/onboarding/domainselection" element={<DomainSelectionPage />} />
+                <Route path="/onboarding/skillassessment" element={<SkillAssessmentPage />} />
+                <Route path="/onboarding/summaryreport" element={<OnboardingSummaryPage />} />
+                <Route path="/onboarding/aiassistantchat" element={<AIOnboardingAssistantPage />} />
+                <Route path="/onboarding/finish" element={<TransitionToDashboardPage />} />
+                
+                {/* Main Application Route */}
+                <Route path="/dashboard" element={<DashboardHomePage />} />
+            </Route>
+
+            {/* 404 Catch-All Route */}
+            <Route path="*" element={<NotFound />} />
+        </Routes>
+    );
+}
+
 
 const App = () => {
-  return (
-    // 1. Wrap the entire app in AuthProvider to give context access to all components
-    <AuthProvider>
-      {/* 2. Router enables navigation */}
-      <Router>
-        {/* 3. Outer div for Sticky Footer Layout */}
-        <div className="flex flex-col min-h-screen">
-          
-          <Navbar />
+    return (
+        <ThemeProvider>
+            <AuthProvider>
+                {/* Wrap Onboarding and AI context around the routing logic */}
+                <OnboardingProvider>
+                    <AIProvider>
+                        <Router>
+                            <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+                                <Navbar />
+                                
+                                <main className="flex-grow">
+                                    <AppRouterWrapper />
+                                </main>
 
-          {/* 4. Main content area takes remaining vertical space (flex-grow) */}
-          <main className="flex-grow">
-            <Routes>
-              
-              {/* --- 🔑 Public Authentication Routes (Accessible to all) --- */}
-              <Route path="/" element={<DashboardBeforeLogin />} /> 
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/verify-otp" element={<VerifyOTP />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+                                <Footer />
+                            </div>
+                        </Router>
+                    </AIProvider>
+                </OnboardingProvider>
+            </AuthProvider>
 
-              {/* --- 🔒 Protected Routes (Requires Authentication) --- */}
-              {/* Use <Route element={<ProtectedRoute />} to wrap private routes */}
-              <Route element={<ProtectedRoute />}>
-                {/* Nested routes are rendered inside the <Outlet /> of ProtectedRoute */}
-                <Route path="/dashboard" element={<DashboardAfterLogin />} />
-                {/* Add other protected routes here:
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/settings" element={<SettingsPage />} />
-                */}
-              </Route>
-
-              {/* 5. 404 Catch-All Route (Must be the last route) */}
-              <Route path="*" element={<NotFound />} />
-              
-            </Routes>
-          </main>
-
-          <Footer />
-          
-        </div>
-      </Router>
-    </AuthProvider>
-  );
+            <Toaster 
+                position="top-right" 
+                toastOptions={{ className: 'dark:bg-gray-700 dark:text-white' }}
+            />
+        </ThemeProvider>
+    );
 };
 
 export default App;

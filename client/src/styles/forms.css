@@ -1,0 +1,24 @@
+/* Custom styles for inputs, particularly for MultiSelect, radio buttons, 
+  and focus states that deviate from default Tailwind/browser styles.
+*/
+
+/* Custom style for radio buttons to ensure visibility in dark mode */
+input[type="radio"]:checked {
+  background-color: #4f46e5; /* indigo-600 */
+  border-color: #4f46e5;
+}
+
+/* Ensure focus rings are clean and consistent */
+input:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.5); /* Custom indigo glow */
+}
+
+/* Style for textareas/inputs with errors */
+.input-error {
+  border-color: #ef4444; /* Red-500 */
+}
+
+.input-error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5);
+}

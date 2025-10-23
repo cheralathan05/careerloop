@@ -1,19 +1,22 @@
+// server/server.js (FINAL PURE ES MODULE VERSION ✅)
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import passport from 'passport';
-import connectDB from './config/db.js';
 
-// ✅ IMPORT ALL ROUTES
+// --- PURE ESM IMPORTS ---
+// Import Configuration (initPassportSetup needs to be a function)
+import connectDB from './config/db.js';
+import { initPassportSetup } from './config/passportSetup.js'; // Named import
+
+// Import ALL Routes (These must be pure ESM default exports)
 import authRoutes from './routes/authRoutes.js';
 import onboardingRoutes from './routes/onboardingRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import feedbackRoutes from './routes/feedbackRoutes.js';
 import mentorRoutes from './routes/mentorRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
-
-// ✅ FIX: Use NAMED IMPORT to correctly load initPassportSetup
-import { initPassportSetup } from './config/passportSetup.js'; 
 
 // -------------------------------------------------------------------
 // EXECUTION ORDER IS CRITICAL HERE:
@@ -47,11 +50,11 @@ app.use(
 app.use(passport.initialize());
 
 // -------------------------------------------------------------------
-// ✅ 8️⃣ MOUNT ALL ROUTES
+// ✅ 8️⃣ MOUNT ALL ROUTES (Using clean imported router objects)
 // -------------------------------------------------------------------
 
-app.use('/api/auth', authRoutes); // Already present
-app.use('/api/onboarding', onboardingRoutes); // 👈 FIX for the 404 error
+app.use('/api/auth', authRoutes); // No more .default required
+app.use('/api/onboarding', onboardingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/mentors', mentorRoutes);
@@ -64,16 +67,12 @@ app.get('/', (req, res) => {
   res.send('🚀 Auth API running successfully...');
 });
 
-// ✅ 🔟 Global Error Handler
+// ✅ 🔟 Global Error Handler (Add notFound/errorHandler if needed)
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err.message);
-  res.status(res.statusCode || 500).json({
-    message: err.message || 'Server error',
-  });
+  res.status(res.statusCode || 500).json({ message: err.message || 'Server error' });
 });
 
 // ✅ 11️⃣ Start the Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

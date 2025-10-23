@@ -1,47 +1,70 @@
-// src/routes/AppRoutes.jsx (Adding the ProtectedRoute stub)
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// ... existing context and page imports
+import { ProtectedRoute } from './ProtectedRoute';
+import { useAuth } from '../hooks/useAuth'; 
+import { useOnboarding } from '../hooks/useOnboarding';
 
-// Mocked ProtectedRoute component
-const ProtectedRoute = ({ children }) => {
-    // In a real app, this checks authentication status (e.g., JWT presence)
-    const isAuthenticated = true; // Assume user is logged in after onboarding
-    
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
-    return children;
-};
+// --- Auth Pages ---
+import LoginPage from '../pages/auth/Login';
+import SignupPage from '../pages/auth/Signup';
+import VerifyOTPPage from '../pages/auth/VerifyOTP';
+import ForgotPasswordPage from '../pages/auth/ForgotPassword';
+import ResetPasswordPage from '../pages/auth/ResetPassword';
 
-const AppRoutes = () => {
-    // ... existing AppRoutes logic ...
+// --- Onboarding Pages (Protected) ---
+import WelcomePage from '../pages/onboarding/Welcome';
+import UserDetailsFormPage from '../pages/onboarding/UserDetailsForm';
+import DomainSelectionPage from '../pages/onboarding/DomainSelection';
+import SkillAssessmentPage from '../pages/onboarding/SkillAssessment';
+import OnboardingSummaryPage from '../pages/onboarding/OnboardingSummary';
+import AIOnboardingAssistantPage from '../pages/onboarding/AIOnboardingAssistant';
+import TransitionToDashboardPage from '../pages/onboarding/TransitionToDashboard';
+
+// --- Dashboard Pages (Protected) ---
+import DashboardHomePage from '../pages/dashboard/DashboardHome';
+import NotFound from '../pages/NotFound'; // Assuming a NotFound page exists
+
+/**
+ * @desc Defines all application routes, handling public access, protection,
+ * and flow redirection (Login -> Onboarding -> Dashboard).
+ */
+export const AppRoutes = () => {
+    const { user } = useAuth();
+    const { onboardingState: { isComplete, currentPhase } } = useOnboarding();
+
+    // Determine the starting point of the onboarding flow for authenticated users
+    const onboardingStartPath = isComplete ? '/dashboard' : `/onboarding/${ONBOARDING_FLOW_MAP[currentPhase - 1]?.name.toLowerCase().replace(/\s/g, '') || 'welcome'}`;
+
     return (
         <Router>
-            {/* ... OnboardingProvider ... */}
-                <Routes>
-                    {/* ... Onboarding Routes ... */}
-                    
-                    {/* Protected Dashboard Routes (Phase 11+) */}
-                    <Route 
-                        path="/dashboard/*" 
-                        element={<ProtectedRoute>
-                            {/* Nested routes for the dashboard */}
-                            <Routes>
-                                <Route path="/" element={<DashboardHome />} />
-                                <Route path="/progress" element={<ProgressOverview />} />
-                                {/* Add routes for Phase 13, 14, 15 here */}
-                            </Routes>
-                        </ProtectedRoute>} 
-                    />
+            <Routes>
+                {/* --- Public Routes --- */}
+                <Route path="/" element={<Navigate to={user ? onboardingStartPath : '/login'} replace />} />
+                <Route path="/login" element={user ? <Navigate to={onboardingStartPath} replace /> : <LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/verify-otp" element={<VerifyOTPPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                {/* Reset route often comes with a query parameter like /reset-password?token=... */}
+                <Route path="/reset-password" element={<ResetPasswordPage />} /> 
 
-                    {/* Default Route */}
-                    {/* ... */}
-                </Routes>
-            {/* ... */}
+                {/* --- Protected Routes --- */}
+                <Route element={<ProtectedRoute />}>
+                    {/* Onboarding Flow */}
+                    <Route path="/onboarding/welcome" element={<WelcomePage />} />
+                    <Route path="/onboarding/details" element={<UserDetailsFormPage />} />
+                    <Route path="/onboarding/domains" element={<DomainSelectionPage />} />
+                    <Route path="/onboarding/assessment" element={<SkillAssessmentPage />} />
+                    <Route path="/onboarding/summary" element={<OnboardingSummaryPage />} />
+                    <Route path="/onboarding/chat" element={<AIOnboardingAssistantPage />} />
+                    <Route path="/onboarding/finish" element={<TransitionToDashboardPage />} />
+                    
+                    {/* Main Application */}
+                    <Route path="/dashboard" element={<DashboardHomePage />} />
+                </Route>
+
+                {/* --- Fallback Route --- */}
+                <Route path="*" element={<NotFound />} />
+            </Routes>
         </Router>
     );
 };
-
-export default AppRoutes;
