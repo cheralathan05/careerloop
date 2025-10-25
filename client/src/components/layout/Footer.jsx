@@ -2,6 +2,7 @@ import React from 'react';
 
 /**
  * @desc Standard application footer component.
+ * Should be placed outside the main content area in your application layout.
  */
 export const Footer = () => {
     return (

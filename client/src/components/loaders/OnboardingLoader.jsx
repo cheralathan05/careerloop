@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader } from '../common/Loader'; // Reuse central Loader component
+import { Loader } from '../common/Loader'; // Assuming correct import from fixed components
 
 /**
  * @desc Generic loader for onboarding pages or steps.
@@ -17,7 +17,7 @@ export const OnboardingLoader = ({
             role="status"
             aria-live="polite"
         >
-            {/* Central spinner or animation */}
+            {/* Central spinner or animation. We pass the message down to the central Loader */}
             <Loader size="lg" message={message} />
         </div>
     );

@@ -1,9 +1,12 @@
 import React, { useEffect } from 'react';
-import { Button } from '../common/Button';
+import { Button } from '../common/Button'; // Fixed component
 import { XCircle } from 'lucide-react';
 
 /**
  * @desc Reusable confirmation modal for user actions with optional loading and keyboard support.
+ * @param {boolean} isOpen - Controls visibility.
+ * @param {function} onClose - Closes the modal.
+ * @param {function} onConfirm - Function executed when the user confirms the action.
  */
 export const ConfirmationModal = ({
     isOpen,
@@ -17,26 +20,34 @@ export const ConfirmationModal = ({
     confirmButtonVariant = "danger",
 }) => {
 
-    // Lock body scroll when modal is open
+    // --- Side Effect: Lock body scroll & Keyboard Handling (Escape/Enter) ---
     useEffect(() => {
+        // Lock body scroll
         if (isOpen) document.body.style.overflow = 'hidden';
         else document.body.style.overflow = '';
-        return () => { document.body.style.overflow = ''; };
-    }, [isOpen]);
-
-    // Keyboard handling: Escape to close, Enter to confirm
-    useEffect(() => {
+        
+        // Keyboard Handling
         const handleKey = (e) => {
             if (!isOpen) return;
             if (e.key === 'Escape') onClose?.();
-            if (e.key === 'Enter') onConfirm?.();
+            // Prevents accidental double-submission or form submission if confirmed
+            if (e.key === 'Enter' && onConfirm) {
+                 e.preventDefault(); 
+                 onConfirm();
+            }
         };
         window.addEventListener('keydown', handleKey);
-        return () => window.removeEventListener('keydown', handleKey);
+        
+        // Cleanup function
+        return () => { 
+            document.body.style.overflow = ''; 
+            window.removeEventListener('keydown', handleKey);
+        };
     }, [isOpen, onClose, onConfirm]);
 
     if (!isOpen) return null;
 
+    // --- Render ---
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 dark:bg-opacity-70 backdrop-blur-sm"
@@ -81,7 +92,8 @@ export const ConfirmationModal = ({
                     <Button
                         variant={confirmButtonVariant}
                         onClick={onConfirm}
-                        isLoading={isLoading}
+                        // NOTE: Button component automatically handles 'loading' state
+                        loading={isLoading} 
                     >
                         {confirmText}
                     </Button>

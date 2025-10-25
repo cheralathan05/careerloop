@@ -1,5 +1,5 @@
 import React, { createContext, useState, useMemo, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth'; 
+import useAuth from '../hooks/useAuth'; // <-- Correct: Getting the default export
 // NOTE: We assume these utility files exist and will be provided later.
 // We remove the showToast import as it's not used elsewhere in this context.
 import { initialOnboardingState, ONBOARDING_FLOW_MAP } from '../utils/constants'; 

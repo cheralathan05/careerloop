@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
-import Card from '../../components/common/Card.jsx';
-import Button from '../../components/common/Button.jsx';
+import { Card } from '../../components/common/Card.jsx'; // <-- Correct: Using named import
+import { Button } from '../../components/common/Button.jsx'; // <-- Correct: Using named import
 
 // --- Custom Hook for Looping Typing Animation (Unchanged) ---
 const useTypingAnimation = (texts, speed = 50, pause = 3000) => {

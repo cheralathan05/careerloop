@@ -7,7 +7,7 @@ import { TrendingUp } from 'lucide-react';
 /**
  * @desc Component that groups the main visualization elements for the final summary page.
  * @param {Array<object>} radarData - Data structured for the radar chart.
- * @param {number} overallScore - The overall percentage score.
+ * @param {number} overallScore - The overall percentage score (0-100).
  * @param {string} scoreDetail - Detail text for the progress graph.
  */
 export const SummaryChart = ({ radarData, overallScore, scoreDetail }) => {
@@ -16,13 +16,15 @@ export const SummaryChart = ({ radarData, overallScore, scoreDetail }) => {
             
             {/* Radar Chart (Col 1 & 2) */}
             <Card title="Skill Proficiency Radar" className="lg:col-span-2">
+                {/* Passes data structured from the fixed useOnboarding hook */}
                 <SkillRadarChart data={radarData} title="Proficiency Across Domains" />
             </Card>
 
             {/* Overall Score/Progress (Col 3) */}
             <div className="space-y-6">
+                {/* Skill Progress Graph */}
                 <SkillProgressGraph 
-                    percentage={overallScore}
+                    percentage={overallScore} // Expects a value from 0 to 100
                     label="Overall Assessment Score"
                     detail={scoreDetail}
                 />
@@ -37,3 +39,4 @@ export const SummaryChart = ({ radarData, overallScore, scoreDetail }) => {
         </div>
     );
 };
+

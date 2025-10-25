@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'; // Added useMemo
-import { useAuth } from '../../hooks/useAuth'; // Fixed in step 14
+import useAuth from '../../hooks/useAuth'; // <-- Correct: Getting the default export
 import { useOnboarding } from '../../hooks/useOnboarding'; // Fixed in step 19
 // Removed unused import: import { DashboardPreviewLayout } from '../../components/layout/DashboardPreviewLayout';
 import { Card } from '../../components/common/Card';

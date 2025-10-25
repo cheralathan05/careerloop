@@ -1,6 +1,6 @@
 import { useContext, useMemo, useCallback, useState } from 'react';
 import { OnboardingContext } from '../context/OnboardingContext';
-import { useAuth } from './useAuth';
+import useAuth from './useAuth'; // <-- Correct: Getting the default export
 // FIX 1: Import the correct function names from onboardingService.jsx (Step 8)
 import { 
     saveUserDetails,

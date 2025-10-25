@@ -1,11 +1,34 @@
+import apiClient from './apiClient';
+
+const FEEDBACK_BASE_URL = 'feedback'; 
+
+/**
+ * @desc Submits user feedback (AI rating, comments, etc.) to the backend.
+ * @param {object} payload - The feedback data.
+ * @returns {Promise<object>} Server response.
+ */
+export const submitFeedback = async (payload) => {
+    try {
+        // POST /api/feedback/submit
+        const response = await apiClient.post(`${FEEDBACK_BASE_URL}/submit`, payload);
+        // The apiClient already handles success/error toasting
+        return response.data || response;
+    } catch (error) {
+        // Re-throw the error for the modal component to catch and log
+        throw error;
+    }
+};
+
+export default { submitFeedback };
+
 import React, { useState, useEffect } from 'react';
-import { Modal } from '../common/Modal';
+import { Modal } from '../common/Modal'; // Assuming correct import
 import { Button } from '../common/Button';
-import { Input } from '../common/Input';
+import { InputField } from '../ui/InputField'; // FIX: Changed Input to InputField for consistency
 import { Star, Sparkles } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { submitFeedback } from '../../services/feedbackService';
-import { showToast } from '../../utils/toastNotifications';
+import { useAuth } from '../../hooks/useAuth'; // Fixed hook
+import { submitFeedback } from '../../services/feedbackService'; // CRITICAL FIX: Service function imported
+import { showToast } from '../../utils/toastNotifications'; // Fixed utility
 
 /**
  * @desc Modal for submitting user feedback about the AI Assistant's performance.
@@ -32,13 +55,14 @@ export const AIFeedbackModal = ({ isOpen, onClose }) => {
     };
 
     const handleSubmitFeedback = async () => {
-        if (!user) {
+        // Basic checks
+        if (!user || !user.id) { // Check for user ID, not just existence
             showToast("You must be logged in to submit feedback.", 'error');
             return;
         }
 
-        if (!comments && rating === 5) {
-            showToast("Awesome! Tell us more in the comments!", 'warn');
+        if (!comments.trim() && rating < 5) { // Encourage comments for lower ratings
+            showToast("Please provide comments when rating below 5, it helps us improve!", 'warning');
             return;
         }
 
@@ -48,7 +72,8 @@ export const AIFeedbackModal = ({ isOpen, onClose }) => {
                 type: 'ai_assistant_feedback',
                 rating,
                 comments: comments.trim() || `[No Comment - Rating ${rating}/5]`,
-                phase: 'AI Assistant Chat',
+                userId: user.id, // Include user ID for tracking
+                phase: 'AI Assistant Chat', // Contextual data
             };
 
             await submitFeedback(payload);
@@ -57,8 +82,9 @@ export const AIFeedbackModal = ({ isOpen, onClose }) => {
             handleClose();
 
         } catch (error) {
-            showToast(error.message || 'Failed to submit feedback.', 'error');
-            console.error("AIFeedbackModal Error:", error);
+            // The service/apiClient handles the network toast, here we handle the cleanup
+            // Log the error for debugging
+            console.error("AIFeedbackModal Submission Failed:", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -78,7 +104,7 @@ export const AIFeedbackModal = ({ isOpen, onClose }) => {
 
                 {/* Rating Section */}
                 <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
+                    <label htmlFor="ai-rating-range" className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
                         <Sparkles className="w-5 h-5 mr-1 text-indigo-500" /> Quality Rating:
                     </label>
                     <div className="flex items-center space-x-1">
@@ -86,19 +112,22 @@ export const AIFeedbackModal = ({ isOpen, onClose }) => {
                         <span className="text-gray-500">/ 5</span>
                     </div>
                 </div>
-                <Input 
+                
+                {/* Rating Input */}
+                <input 
+                    id="ai-rating-range" // FIX: Added ID for accessibility
                     type="range"
                     min={1}
                     max={5}
                     step={1}
                     value={rating}
                     onChange={(e) => setRating(Number(e.target.value))}
-                    className="mb-2"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg dark:bg-gray-700"
                     aria-label="AI Assistant Quality Rating"
                 />
 
                 {/* Optional Comments */}
-                <Input 
+                <InputField 
                     label="Comments (Optional)"
                     type="textarea"
                     rows={4}

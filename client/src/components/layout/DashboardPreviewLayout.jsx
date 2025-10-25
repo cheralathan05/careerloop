@@ -7,9 +7,17 @@ import { useNavigate } from 'react-router-dom';
 /**
  * @desc Layout wrapper for the final onboarding step,
  * providing a teaser of the personalized dashboard.
+ * @param {object} user - The authenticated user object.
+ * @param {function} onComplete - Function to call to finalize the onboarding state.
  */
 export const DashboardPreviewLayout = ({ user, onComplete }) => {
     const navigate = useNavigate();
+
+    // Use a placeholder function for the button's action if onComplete isn't defined
+    const handleButtonClick = () => {
+        onComplete?.(); // Call the finalization logic provided by the parent page
+        navigate('/dashboard', { replace: true }); // Immediately navigate to the dashboard
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
@@ -17,15 +25,17 @@ export const DashboardPreviewLayout = ({ user, onComplete }) => {
                 title="Your CareerLoop Launchpad" 
                 className="w-full max-w-4xl shadow-2xl text-center"
             >
+                {/* Title Section */}
                 <h2 className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-6">
                     Congratulations, {user?.name || 'Explorer'}!
                 </h2>
                 <p className="text-lg text-gray-600 dark:text-gray-400 mb-10">
-                    Your <strong>AI-powered career path</strong> is ready. Here's a glimpse of your personalized dashboard.
+                    Your **AI-powered career path** is ready. Here's a glimpse of your personalized dashboard.
                 </p>
 
+                {/* Preview Cards Grid (Static/Mock Data) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    {/* Top Recommended Domain */}
+                    
                     <Card 
                         title="Top Recommended Domain" 
                         titleIcon={TrendingUp} 
@@ -35,7 +45,6 @@ export const DashboardPreviewLayout = ({ user, onComplete }) => {
                         <p className="text-sm text-gray-500 mt-1">Score: 85% Match</p>
                     </Card>
 
-                    {/* Immediate Next Task */}
                     <Card title="Immediate Next Task" titleIcon={Users}>
                         <p className="text-gray-800 dark:text-gray-200 font-medium">
                             Build a minimum viable portfolio project.
@@ -43,7 +52,6 @@ export const DashboardPreviewLayout = ({ user, onComplete }) => {
                         <p className="text-sm text-gray-500 mt-1">Priority: High</p>
                     </Card>
 
-                    {/* Skill Gap */}
                     <Card title="Skill Gap" titleIcon={TrendingUp}>
                         <p className="text-gray-800 dark:text-gray-200 font-medium">
                             Node.js API security
@@ -52,13 +60,12 @@ export const DashboardPreviewLayout = ({ user, onComplete }) => {
                     </Card>
                 </div>
 
+                {/* Final Navigation Button */}
                 <Button
-                    onClick={() => {
-                        onComplete(); // Mark onboarding as complete
-                        navigate('/dashboard'); 
-                    }}
+                    onClick={handleButtonClick}
                     size="lg"
                     className="w-full md:w-auto"
+                    variant="primary"
                 >
                     Go to Full Dashboard
                 </Button>

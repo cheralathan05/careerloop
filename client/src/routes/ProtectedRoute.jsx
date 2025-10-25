@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import useAuth from '../hooks/useAuth'; // <-- Correct: Getting the default export
 import { useOnboarding } from '../hooks/useOnboarding';
 import AuthLoader from '../components/loaders/AuthLoader';
 import { ONBOARDING_FLOW_MAP } from '../utils/constants';

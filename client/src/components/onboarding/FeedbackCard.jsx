@@ -5,7 +5,8 @@ import { MessageSquare, ThumbsUp } from 'lucide-react';
 import { AIFeedbackModal } from '../modals/AIFeedbackModal';
 
 /**
- * @desc A persistent or dashboard component to solicit quick feedback.
+ * @desc A persistent or dashboard component to solicit quick feedback for the AI or application.
+ * @param {string} title - The title of the card.
  */
 export const FeedbackCard = ({ title = "Help Us Improve" }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,6 +26,7 @@ export const FeedbackCard = ({ title = "Help Us Improve" }) => {
                 Submit Feedback
             </Button>
 
+            {/* Modal is rendered outside the card but controlled by the card's state */}
             <AIFeedbackModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </Card>
     );

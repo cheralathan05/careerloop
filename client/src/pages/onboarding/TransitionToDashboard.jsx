@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { useOnboarding } from '../../hooks/useOnboarding'; // Fixed in step 19
-import { useAuth } from '../../hooks/useAuth'; // Fixed in step 14
+import  useAuth  from '../../hooks/useAuth'; // Fixed in step 14
 // FIX 1: Use the correct folder name 'layout' or 'layouts' as per your project structure.
 import { DashboardPreviewLayout } from '../../components/layout/DashboardPreviewLayout'; 
 import { useNavigate } from 'react-router-dom';

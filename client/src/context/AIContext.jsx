@@ -1,5 +1,5 @@
 import React, { useState, useContext, useMemo, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth'; 
+import useAuth from '../hooks/useAuth'; // <-- Correct: Getting the default export
 // import { showToast } from '../utils/toastNotifications'; // FIX: Removed unused import
 
 // Define the shape of a chat message

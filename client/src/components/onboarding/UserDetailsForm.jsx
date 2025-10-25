@@ -1,7 +1,6 @@
-// NOTE: This component is slightly simplified as the main logic is in the hook/page
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card } from '../common/Card';
-import { Input } from '../common/Input';
+import { InputField } from '../ui/InputField'; // FIX: Renamed import to InputField
 import { MultiSelect } from '../ui/MultiSelect';
 import { Button } from '../common/Button';
 import { ArrowRight } from 'lucide-react';
@@ -14,54 +13,70 @@ import { ResumeUpload } from './ResumeUpload';
  * @param {boolean} isLoading - Loading state passed from the hook.
  */
 export const UserDetailsForm = ({ initialDetails, onSubmit, isLoading }) => {
+    // Initialize local state with props, ensuring form inputs are controllable
     const [localDetails, setLocalDetails] = useState(initialDetails);
     
-    const allSkills = ['React', 'Node.js', 'Python', 'Figma', 'AWS', 'SQL', 'TypeScript'];
-    const allInterests = ['Frontend', 'Backend', 'Design', 'Data', 'Security', 'DevOps'];
+    // Mock data for MultiSelect options (can be centralized in constants later)
+    const allSkills = ['React', 'Node.js', 'Python', 'Figma', 'AWS', 'SQL', 'TypeScript', 'Docker', 'MongoDB', 'Java', 'C++'];
+    const allInterests = ['Frontend', 'Backend', 'Design', 'Data Science', 'Security', 'DevOps', 'Mobile Development'];
+
+    const handleChange = useCallback((e) => {
+        setLocalDetails(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSubmit(localDetails);
+        // Pass the local, updated state back to the parent hook/page for validation/submission
+        onSubmit(localDetails); 
     };
 
-    const handleSkillsExtracted = (updatedDetails) => {
+    const handleSkillsExtracted = useCallback((updatedDetails) => {
         // Update local state with merged skills after resume upload
         setLocalDetails(updatedDetails);
-    };
+    }, []);
 
     return (
         <Card title="Your Background & Goals">
             <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
+                {/* Full Name */}
+                <InputField
                     label="Full Name"
+                    name="fullName"
                     value={localDetails.fullName}
-                    onChange={(e) => setLocalDetails({ ...localDetails, fullName: e.target.value })}
+                    onChange={handleChange}
                     required
                 />
-                <Input
+                
+                {/* Education */}
+                <InputField
                     label="Highest Education"
+                    name="education"
                     value={localDetails.education}
-                    onChange={(e) => setLocalDetails({ ...localDetails, education: e.target.value })}
+                    onChange={handleChange}
                     placeholder="e.g., BSc Computer Science"
                 />
                 
                 {/* Resume Upload (Optional, non-blocking) */}
                 <ResumeUpload onSkillsExtracted={handleSkillsExtracted} />
                 
+                {/* Primary Skills */}
                 <MultiSelect
-                    label="Primary Skills"
+                    label="Primary Skills (Max 15)"
                     options={allSkills}
                     selected={localDetails.skills}
                     onChange={(newSkills) => setLocalDetails({ ...localDetails, skills: newSkills })}
                     maxSelection={15}
+                    placeholder="Select up to 15 relevant skills..."
                 />
                 
+                {/* Career Interests */}
                 <MultiSelect
-                    label="Career Interests"
+                    label="Career Interests (Max 5)"
                     options={allInterests}
                     selected={localDetails.interests}
                     onChange={(newInterests) => setLocalDetails({ ...localDetails, interests: newInterests })}
                     maxSelection={5}
+                    placeholder="Select fields you are most interested in..."
                 />
                 
                 <Button type="submit" icon={ArrowRight} className="w-full mt-6" disabled={isLoading}>

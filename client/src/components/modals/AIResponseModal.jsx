@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Button } from '../common/Button';
+import { Button } from '../common/Button'; // Assuming common Button is used
 import { Sparkles, XCircle } from 'lucide-react';
 import Markdown from 'react-markdown';
 
@@ -24,18 +24,20 @@ export const AIResponseModal = ({
     footerActions,
     isLoading = false,
 }) => {
-    // Prevent body scroll when modal is open
+    // --- Side Effect: Control Body Scroll ---
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = '';
         }
+        // Cleanup function to restore scroll on unmount
         return () => {
             document.body.style.overflow = '';
         };
     }, [isOpen]);
 
+    // Render nothing if closed
     if (!isOpen) return null;
 
     return (
@@ -44,11 +46,14 @@ export const AIResponseModal = ({
             aria-modal="true"
             role="dialog"
             aria-labelledby="ai-response-title"
-            onClick={onClose}
+            // Close the modal if the backdrop is clicked
+            onClick={onClose} 
         >
             <div
+                // Modal content box
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100 opacity-100"
-                onClick={(e) => e.stopPropagation()}
+                // Stop click propagation to prevent closing on internal click
+                onClick={(e) => e.stopPropagation()} 
             >
                 {/* Header */}
                 <div className="flex justify-between items-center pb-4 border-b border-gray-200 dark:border-gray-700 mb-4">
@@ -56,7 +61,7 @@ export const AIResponseModal = ({
                         id="ai-response-title"
                         className="text-2xl font-bold text-gray-900 dark:text-white flex items-center"
                     >
-                        <Sparkles className="w-6 h-6 text-indigo-500 mr-2" />
+                        <Sparkles className="w-6 h-6 text-indigo-500 mr-2 flex-shrink-0" />
                         {title}
                     </h3>
                     <button
@@ -68,7 +73,7 @@ export const AIResponseModal = ({
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Content Area */}
                 <div className="text-gray-700 dark:text-gray-300 prose dark:prose-invert max-w-none text-base">
                     {isLoading ? (
                         <div className="flex justify-center items-center h-48">
@@ -76,6 +81,7 @@ export const AIResponseModal = ({
                             <span className="text-lg font-medium">Generating content...</span>
                         </div>
                     ) : (
+                        // Render markdown content
                         <Markdown>{content}</Markdown>
                     )}
                 </div>
@@ -90,3 +96,4 @@ export const AIResponseModal = ({
         </div>
     );
 };
+
