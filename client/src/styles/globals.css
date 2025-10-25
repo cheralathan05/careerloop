@@ -1,47 +1,48 @@
 /* This file imports the base Tailwind layers and defines global CSS variables 
-  and font imports.
+   and font imports.
 */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles and overrides not easily achieved with utility classes.
-*/
+/* --- Global styles and overrides not easily achieved with utility classes. --- */
 
-/* Apply system fonts or a custom font globally */
+/* Apply system fonts or a custom font globally and define CSS variables for theme-aware elements */
 :root {
   /* Set a primary text color variable for non-Tailwind elements */
   --color-text-primary: #1f2937; /* Gray-800 */
 }
 
-/* Ensure the dark mode selector works correctly */
+/* Ensure the dark mode selector works correctly (applied to the HTML tag by the ThemeContext) */
 .dark {
   --color-text-primary: #f3f4f6; /* Gray-100 */
 }
 
 /* Base style for the app body */
 body {
-  font-family: 'Inter', sans-serif; /* Assuming Inter font */
+  /* Assuming Inter font is imported in index.html or available */
+  font-family: 'Inter', sans-serif; 
   color: var(--color-text-primary);
-  /* Smooth transition for theme change */
+  /* Smooth transition for theme change (important for theme context) */
   transition: background-color 0.3s, color 0.3s;
+  min-height: 100vh;
 }
 
-/* Custom scrollbar styles for dark mode compatibility (Optional) */
+/* --- Custom Scrollbar Styles for Dark Mode Compatibility (Aesthetics) --- */
 ::-webkit-scrollbar {
   width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f1f1f1; /* Light mode track */
 }
 .dark ::-webkit-scrollbar-track {
-  background: #374151; /* Dark Gray-700 */
+  background: #374151; /* Dark Gray-700 track in dark mode */
 }
 ::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #6b7280; /* Dark Gray-500 */
+  background: #6b7280; /* Dark Gray-500 thumb in dark mode */
 }

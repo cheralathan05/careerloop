@@ -28,51 +28,74 @@ import DashboardHomePage from '../pages/dashboard/DashboardHome';
 import NotFound from '../pages/NotFound';
 
 export const AppRoutes = () => {
-  const { user } = useAuth();
-  const { onboardingState: { isComplete, currentPhase } } = useOnboarding();
+    // Get global state from our fixed hooks
+    const { user } = useAuth();
+    const { onboardingState: { isComplete, currentPhase } } = useOnboarding();
 
-  // Determine the correct onboarding step path
-  const onboardingStartPath = isComplete
-    ? '/dashboard'
-    : `/onboarding/${ONBOARDING_FLOW_MAP[currentPhase - 1]?.name.toLowerCase().replace(/\s/g, '') || 'welcome'}`;
+    // Determine the correct onboarding step path for redirects
+    const onboardingStartPath = React.useMemo(() => {
+        if (isComplete) {
+            return '/dashboard';
+        }
 
-  return (
-    <Router>
-      <Routes>
-        {/* --- Public Routes --- */}
-        <Route path="/" element={<Navigate to={user ? onboardingStartPath : '/login'} replace />} />
-        <Route path="/login" element={user ? <Navigate to={onboardingStartPath} replace /> : <LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/verify-otp" element={<VerifyOTPPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        // Get the current step object (phase is 1-indexed, array is 0-indexed)
+        const currentStep = ONBOARDING_FLOW_MAP[currentPhase - 1];
 
-        {/* --- Protected Routes --- */}
-        <Route element={<ProtectedRoute />}>
+        // Ensure we have a valid step, otherwise default to 'welcome'
+        if (currentStep && currentStep.name) {
+            // CRITICAL ENHANCEMENT: Normalize the name exactly to the path slug
+            const pathSlug = currentStep.name.toLowerCase().replace(/\s/g, '');
+            return `/onboarding/${pathSlug}`;
+        }
+        
+        // Fallback for an unhandled or initial state
+        return '/onboarding/welcome'; 
 
-          {/* --- Onboarding Nested Routes --- */}
-          <Route path="/onboarding" element={<OnboardingLayout />}>
-            <Route path="welcome" element={<WelcomePage />} />
-            <Route path="details" element={<UserDetailsFormPage />} />
-            <Route path="domains" element={<DomainSelectionPage />} />
-            <Route path="assessment" element={<SkillAssessmentPage />} />
-            <Route path="summary" element={<OnboardingSummaryPage />} />
-            <Route path="chat" element={<AIOnboardingAssistantPage />} />
-            <Route path="finish" element={<TransitionToDashboardPage />} />
-            <Route index element={<Navigate to="welcome" replace />} />
-          </Route>
+    }, [isComplete, currentPhase]);
 
-          {/* --- Dashboard Nested Routes --- */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<DashboardHomePage />} />
-            {/* Add more dashboard subpages here as needed */}
-          </Route>
 
-        </Route>
+    return (
+        <Router>
+            <Routes>
+                {/* --- Root Path Redirect --- */}
+                <Route path="/" element={<Navigate to={user ? onboardingStartPath : '/login'} replace />} />
 
-        {/* --- Fallback Route --- */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
-  );
+                {/* --- Public Auth Routes (Redirects if already authenticated) --- */}
+                <Route path="/login" element={user ? <Navigate to={onboardingStartPath} replace /> : <LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/verify-otp" element={<VerifyOTPPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+                {/* --- Protected Routes (Requires Authentication) --- */}
+                <Route element={<ProtectedRoute />}>
+
+                    {/* --- Onboarding Nested Routes (Handled by OnboardingLayout) --- */}
+                    <Route path="/onboarding" element={<OnboardingLayout />}>
+                        {/* NOTE: Paths are auto-generated from flow map names: */}
+                        <Route path="welcome" element={<WelcomePage />} /> 
+                        <Route path="userdetails" element={<UserDetailsFormPage />} /> 
+                        <Route path="domainselection" element={<DomainSelectionPage />} /> 
+                        <Route path="skillassessment" element={<SkillAssessmentPage />} /> 
+                        <Route path="summaryreport" element={<OnboardingSummaryPage />} /> 
+                        <Route path="aiassistantchat" element={<AIOnboardingAssistantPage />} /> 
+                        <Route path="finish" element={<TransitionToDashboardPage />} /> 
+                        
+                        {/* Default /onboarding redirects to the current phase's path */}
+                        <Route index element={<Navigate to={onboardingStartPath.replace('/onboarding/', '')} replace />} />
+                    </Route>
+
+                    {/* --- Dashboard Nested Routes (Handled by DashboardLayout) --- */}
+                    <Route path="/dashboard" element={<DashboardLayout />}>
+                        <Route index element={<DashboardHomePage />} />
+                        {/* Add more dashboard subpages here */}
+                    </Route>
+
+                </Route>
+
+                {/* --- Fallback Route --- */}
+                <Route path="*" element={<NotFound />} />
+            </Routes>
+        </Router>
+    );
 };

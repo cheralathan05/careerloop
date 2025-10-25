@@ -1,26 +1,47 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth'; // Assuming this hook exists
-import AuthLoader from '../components/auth/AuthLoader'; // Full-screen loading component
+import { useAuth } from '../hooks/useAuth'; 
+import { useOnboarding } from '../hooks/useOnboarding'; // CRITICAL: Required for flow enforcement
+import AuthLoader from '../components/loaders/AuthLoader';
+import { ONBOARDING_FLOW_MAP } from '../utils/constants';
 
 /**
- * @desc Component to protect routes, ensuring the user is authenticated.
- * If the user is not authenticated, they are redirected to the login page.
+ * @desc Protects routes, ensuring the user is authenticated and
+ * redirects to the appropriate onboarding step if needed.
  */
 export const ProtectedRoute = () => {
-    const { user, isAuthReady, token } = useAuth();
-    
-    // 1. Show a full-screen loader while checking the session status
-    if (!isAuthReady) {
+    // FIX: Use 'loading' (from the fixed useAuth.jsx) for the initial check.
+    const { user, loading, isAuthenticated } = useAuth(); 
+    // CRITICAL: Get onboarding state to enforce the flow
+    const { onboardingState: { isComplete, currentPhase } } = useOnboarding();
+
+    // 1. Show a loader while authentication status is being checked
+    if (loading) {
         return <AuthLoader />;
     }
 
-    // 2. If the user is authenticated (has user object and a token), render the child routes
-    if (user && token) {
-        return <Outlet />;
+    // 2. If user is NOT authenticated, redirect to login
+    if (!isAuthenticated || !user) { 
+        return <Navigate to="/login" replace />;
     }
 
-    // 3. Otherwise, redirect to the login page
-    // The replace prop ensures the current (protected) page isn't added to history.
-    return <Navigate to="/login" replace />;
+    // 3. If onboarding is INCOMPLETE, redirect to the correct step
+    // NOTE: This logic prevents users from accessing /dashboard prematurely.
+    if (!isComplete) {
+        // Find the step name corresponding to the current phase (1-indexed)
+        const currentStep = ONBOARDING_FLOW_MAP[currentPhase - 1];
+        
+        // Safely determine the next path slug (must match AppRoutes.jsx paths)
+        const nextPathSlug = currentStep 
+            ? currentStep.name.toLowerCase().replace(/\s/g, '') 
+            : 'welcome';
+            
+        // Redirect to /onboarding/pathslug
+        return <Navigate to={`/onboarding/${nextPathSlug}`} replace />;
+    }
+
+    // 4. Otherwise, user is authenticated and onboarded; render child routes
+    return <Outlet />;
 };
+
+export default ProtectedRoute;

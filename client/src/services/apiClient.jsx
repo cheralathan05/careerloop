@@ -1,7 +1,10 @@
 import axios from 'axios';
-import { showToast } from '../utils/toastNotifications';
+// This assumes you have a utility file at this path. We'll verify this later.
+import { showToast } from '../utils/toastNotifications'; 
 
-// Use environment variable for the API base URL
+// --- ⚙️ CONFIGURATION ---
+
+// Use environment variable for the API base URL (standardized in .env.local)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const apiClient = axios.create({
@@ -9,11 +12,14 @@ const apiClient = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    // Optional: Include credentials for session cookies if used alongside token
+    // withCredentials: true,
 });
 
-// Request Interceptor: Inject JWT token
+// --- 🛡️ Request Interceptor: Inject JWT token ---
 apiClient.interceptors.request.use(config => {
-    const token = localStorage.getItem('token');
+    // FIX: Changed 'token' to 'accessToken' for consistency with authService.js
+    const token = localStorage.getItem('accessToken'); 
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -22,10 +28,10 @@ apiClient.interceptors.request.use(config => {
     return Promise.reject(error);
 });
 
-// Response Interceptor: Handle global errors (e.g., 401 Unauthorized)
+// --- 🚨 Response Interceptor: Handle Global Errors (401, 403) ---
 apiClient.interceptors.response.use(
     response => {
-        // Server's response should contain { success: true, data: ... }
+        // Return only the data payload for cleaner service calls
         return response.data;
     },
     error => {
@@ -34,15 +40,24 @@ apiClient.interceptors.response.use(
         const message = serverMessage || error.message;
 
         if (status === 401 || status === 403) {
-            // Force logout on session expiration/invalid token
+            // Force client-side logout on session expiration/invalid token
             showToast('Session expired. Please log in again.', 'error');
-            localStorage.removeItem('token');
-            // NOTE: Global state should detect the token removal and redirect to /login
+            
+            // FIX: Changed 'token' to 'accessToken' for consistency
+            localStorage.removeItem('accessToken'); 
+            
+            // Optional: Redirect to login page immediately (better handled in AuthContext/Router)
+            // window.location.href = '/login'; 
         }
         
-        // Show the specific API error to the user
-        showToast(message, 'error');
-        
+        // Show the specific API error to the user if it's not a 401/403 (or if the status isn't handled)
+        if (status !== 401 && status !== 403) {
+             showToast(message, 'error');
+        } else if (status === 401 || status === 403) {
+            // Suppress the redundant error toast if we already showed the "Session expired" message
+        }
+
+        // Reject with the error data from the server or a generic message
         return Promise.reject(error.response?.data || { message: 'Network error' });
     }
 );

@@ -3,10 +3,16 @@ import { XCircle, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 /**
  * @desc Reusable alert component for displaying status messages (e.g., non-toast feedback).
+ * Uses Tailwind CSS classes based on the 'type' prop for color coding.
+ * @param {string} type - 'success', 'error', 'warning', or 'info'.
+ * @param {string} message - The message text to display.
+ * @param {string} className - Optional Tailwind class string for external styling.
  */
 export const AlertBox = ({ type = 'info', message, className = '' }) => {
+    // Return null if there's no message to display
     if (!message) return null;
     
+    // Define all style classes and corresponding Lucide icons
     const styles = {
         success: {
             bg: 'bg-green-50 dark:bg-green-900/30',
@@ -34,6 +40,7 @@ export const AlertBox = ({ type = 'info', message, className = '' }) => {
         },
     };
     
+    // Fallback to 'info' style if an unknown type is provided
     const { bg, border, text, icon: Icon } = styles[type] || styles.info;
 
     return (
@@ -41,7 +48,10 @@ export const AlertBox = ({ type = 'info', message, className = '' }) => {
             className={`p-4 rounded-lg border-l-4 ${bg} ${border} shadow-sm flex items-start w-full ${className}`}
             role="alert"
         >
+            {/* Render the icon */}
             <Icon className={`w-5 h-5 mr-3 flex-shrink-0 ${text}`} />
+            
+            {/* Render the message */}
             <p className={`text-sm ${text} font-medium`}>
                 {message}
             </p>

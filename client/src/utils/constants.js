@@ -9,14 +9,14 @@ export const initialOnboardingState = {
         skills: [],
         resumeUrl: null, // Cloudinary URL 
     },
-    domains: [],      // AI recommended/user selected domains: [{name, score}]
-    quiz: [],         // AI generated questions
-    answers: [],      // User's raw quiz answers
-    summary: null,    // Final AI analysis (radar, tasks, courses)
-    skillScores: {},  // Scores used for radar chart
+    domains: [],        // AI recommended/user selected domains: [{name, score}]
+    quiz: [],           // AI generated questions: Array<object>
+    answers: [],        // User's raw quiz answers: Array<{ questionId, answer }>
+    summary: null,      // Final AI analysis (radar, tasks, courses)
+    skillScores: {},    // Scores used for radar chart: { skillName: score }
 };
 
-// Map of the entire flow (Used for progress bar and conditional rendering)
+// Map of the entire flow (Used for progress bar, routing, and conditional rendering)
 export const ONBOARDING_FLOW_MAP = [
     { phase: 1, name: "Welcome" },
     { phase: 2, name: "User Details" },

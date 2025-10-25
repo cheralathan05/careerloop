@@ -1,8 +1,8 @@
 /* Styles specific to the AI Assistant chat component.
-  Tailwind is preferred, but this handles hard-to-manage aspects.
+   Tailwind is preferred, but this handles hard-to-manage aspects like animations and controlled scrolling.
 */
 
-/* Ensure chat history pane has a controlled height */
+/* Ensure chat history pane has a controlled height and easy scrolling */
 .ai-chat-history {
   /* This prevents the chat window from expanding infinitely */
   max-height: 70vh; 
@@ -11,7 +11,7 @@
   scroll-behavior: smooth;
 }
 
-/* Style for AI thinking dots animation (if not using a simple text pulse) */
+/* Style for AI thinking dots animation */
 @keyframes thinking-pulse {
   0% { opacity: 0.2; }
   50% { opacity: 1; }
@@ -23,7 +23,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: #6366f1; /* Indigo */
+  background-color: #6366f1; /* Indigo (matches a typical primary color in Tailwind) */
   margin: 0 1px;
   animation: thinking-pulse 1.5s infinite;
 }

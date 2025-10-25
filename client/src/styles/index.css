@@ -1,2 +1,7 @@
 /* This file serves as the main entry point for all application styles in main.jsx */
 @import './globals.css';
+@import './forms.css';
+@import './charts.css';
+@import './ai-chat.css';
+
+/* Import any other utility or component-specific styles here */

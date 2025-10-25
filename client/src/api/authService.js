@@ -1,11 +1,13 @@
-// client/src/api/authService.js
 import axios from "axios";
 
 // --- ⚙️ CONFIGURATION ---
 
-// Uses .env variable; falls back to localhost if not set
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-const API_URL = `${BASE_URL}/api/auth`;
+// Use the standardized VITE_API_BASE_URL (which includes /api)
+// Fallback is also updated to include /api for consistency.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+// All Auth endpoints will be relative to /auth
+const API_URL = `${API_BASE}/auth`; 
 
 // Axios instance
 const authAPI = axios.create({
@@ -14,17 +16,22 @@ const authAPI = axios.create({
   withCredentials: true, // required for cookies (CORS)
 });
 
-// --- 🛡️ Attach Token Automatically ---
+// --- 🛡️ Attach Token Automatically (Interceptor) ---
 authAPI.interceptors.request.use((config) => {
-  const token = localStorage.getItem("userToken");
+  // Use 'accessToken' as a more industry-standard key than 'userToken'
+  const token = localStorage.getItem("accessToken"); 
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// --- 🧩 Centralized Error Handler ---
+// --- 🧩 Centralized Error Handler (Enhanced) ---
 const handleApiError = (error, defaultMessage = "An unknown error occurred.") => {
+  // Extract specific message from backend response or fall back to generic message
   const errorMessage = error.response?.data?.message || error.message || defaultMessage;
-  console.error("API Error:", errorMessage);
+  console.error("Auth API Error:", errorMessage, error); // Log the full error object for debugging
+  
+  // Throw the error so the calling function (e.g., inside a hook/context) can catch it
+  // We throw a more specific Error instance for easier differentiation, but a standard Error works too.
   throw new Error(errorMessage);
 };
 
@@ -36,7 +43,8 @@ export const signup = async (data) => {
     const res = await authAPI.post("/signup", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, "Signup failed. Please check your details.");
+    // Re-throw the handled error
+    throw handleApiError(err, "Signup failed. Please check your details.");
   }
 };
 
@@ -46,7 +54,7 @@ export const sendOtp = async (data) => {
     const res = await authAPI.post("/send-otp", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, "Failed to send OTP. Please verify your email.");
+    throw handleApiError(err, "Failed to send OTP. Please verify your email.");
   }
 };
 
@@ -54,10 +62,11 @@ export const sendOtp = async (data) => {
 export const verifyOtp = async (data) => {
   try {
     const res = await authAPI.post("/verify-otp", data);
-    if (res.data?.token) localStorage.setItem("userToken", res.data.token);
+    // Use the standardized key 'accessToken'
+    if (res.data?.token) localStorage.setItem("accessToken", res.data.token); 
     return res.data;
   } catch (err) {
-    handleApiError(err, "OTP verification failed. Code may be invalid or expired.");
+    throw handleApiError(err, "OTP verification failed. Code may be invalid or expired.");
   }
 };
 
@@ -65,23 +74,26 @@ export const verifyOtp = async (data) => {
 export const login = async (credentials) => {
   try {
     const res = await authAPI.post("/login", credentials);
-    if (res.data?.token) localStorage.setItem("userToken", res.data.token);
+    // Use the standardized key 'accessToken'
+    if (res.data?.token) localStorage.setItem("accessToken", res.data.token); 
     return res.data;
   } catch (err) {
-    handleApiError(err, "Login failed. Invalid email or password.");
+    throw handleApiError(err, "Login failed. Invalid email or password.");
   }
 };
 
 // LOGOUT
 export const logout = async () => {
   try {
-    await authAPI.post("/logout");
-    localStorage.removeItem("userToken");
+    // Attempt server-side logout first
+    await authAPI.post("/logout"); 
+    localStorage.removeItem("accessToken"); // Clear client token
     return { success: true, message: "Logged out successfully." };
   } catch (err) {
-    console.warn("Server logout failed, client state cleared:", err.message);
-    localStorage.removeItem("userToken");
-    return { success: false, message: "Logged out locally; server session may persist." };
+    // If server logout fails (e.g., token expired, server down), log a warning and clear client state anyway
+    console.warn("Server logout failed, clearing client state:", err.message);
+    localStorage.removeItem("accessToken");
+    return { success: true, message: "Logged out locally." }; // We return true to proceed with UI change
   }
 };
 
@@ -91,7 +103,7 @@ export const forgotPassword = async (data) => {
     const res = await authAPI.post("/forgot-password", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, "Failed to send password reset link.");
+    throw handleApiError(err, "Failed to send password reset link.");
   }
 };
 
@@ -101,13 +113,14 @@ export const resetPassword = async (data) => {
     const res = await authAPI.post("/reset-password", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, "Password reset failed. Link may be invalid or expired.");
+    throw handleApiError(err, "Password reset failed. Link may be invalid or expired.");
   }
 };
 
 // GOOGLE LOGIN (redirect)
 export const googleLogin = () => {
-  window.location.href = `${BASE_URL}/api/auth/google`;
+  // Use the correct API_BASE path for the redirect
+  window.location.href = `${API_BASE}/auth/google`;
 };
 
 // --- EXPORT DEFAULT ---
@@ -121,3 +134,4 @@ export default {
   resetPassword,
   googleLogin,
 };
+

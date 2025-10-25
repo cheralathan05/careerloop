@@ -1,7 +1,7 @@
 import apiClient from './apiClient';
-import { showToast } from '../utils/toastNotifications';
+// Removed: import { showToast } from '../utils/toastNotifications'; // Toast is handled by apiClient
 
-const UPLOAD_BASE_URL = 'upload';
+const UPLOAD_BASE_URL = 'upload'; // Appends to VITE_API_BASE_URL (e.g., /api/upload)
 
 /**
  * @typedef {object} UploadResult
@@ -16,36 +16,49 @@ const UPLOAD_BASE_URL = 'upload';
  */
 export const uploadResume = async (file) => {
     if (!file) {
+        // Use a standard Error object
         throw new Error("No file selected for upload.");
     }
 
     const formData = new FormData();
-    formData.append('file', file);
+    // Use a standard field name like 'resume' or 'file' based on backend expectation
+    formData.append('resume', file); 
     
     try {
         // POST /api/upload/resume
-        // CRITICAL: Must use multipart/form-data headers
-        const response = await apiClient.post(`${UPLOAD_BASE_URL}/resume`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        // ENHANCEMENT: Removed explicit 'Content-Type' header. Axios handles 'multipart/form-data'
+        // correctly when given a FormData object.
+        const response = await apiClient.post(`${UPLOAD_BASE_URL}/resume`, formData);
 
-        if (response.success && response.data) {
+        // ENHANCEMENT: Safely extract data, checking for nesting under 'data' or being the root.
+        const uploadData = response.data || response;
+        
+        if (uploadData.url && Array.isArray(uploadData.skills)) {
             return {
-                fileUrl: response.data.url, 
-                extractedSkills: response.data.skills, 
+                fileUrl: uploadData.url, 
+                extractedSkills: uploadData.skills, 
             };
         } else {
-            throw new Error(response.message || 'Server failed to process resume.');
+            // Throw a general error if the server response shape is unexpected
+            throw new Error(uploadData.message || 'Server failed to process resume or returned missing data.');
         }
 
     } catch (error) {
-        // apiClient interceptor handles toast
-        const errorMessage = error.message.includes('413') 
-            ? 'File is too large.' 
-            : 'Upload failed. Check file type and size.';
+        // The error thrown from the API call will be caught here (e.g., Axios error)
+        // We override the generic error message for common upload issues (413: Payload Too Large)
+        
+        let errorMessage = 'Upload failed. Check file type and size.';
+        
+        // Check for specific error status or message that indicates file size limit
+        if (error.message.includes('413')) {
+            errorMessage = 'File is too large. Please upload a smaller file.';
+        } else if (error.message.includes('Network Error')) {
+            errorMessage = 'Network connection failed during upload.';
+        }
             
+        // Throw the refined error message
         throw new Error(errorMessage);
     }
 };
+
+export default { uploadResume };

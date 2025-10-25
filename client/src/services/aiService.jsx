@@ -1,7 +1,8 @@
 import apiClient from './apiClient';
-import { showToast } from '../utils/toastNotifications';
+// Assuming this utility exists and is correctly structured
+import { showToast } from '../utils/toastNotifications'; 
 
-const AI_BASE_URL = 'ai';
+const AI_BASE_URL = 'ai'; // Appends to VITE_API_BASE_URL (e.g., /api/ai)
 
 /**
  * @typedef {object} ChatResponse
@@ -16,29 +17,50 @@ const AI_BASE_URL = 'ai';
 export const sendChatMessage = async (prompt) => {
     try {
         // POST /api/ai/chat
-        const response = await apiClient.post(`${AI_BASE_URL}/chat`, { prompt });
-        if (!response.success || !response.data?.reply) {
-            throw new Error(response.message || 'AI assistant failed to generate a reply.');
+        // apiClient will automatically wrap the result of response.data
+        const result = await apiClient.post(`${AI_BASE_URL}/chat`, { prompt });
+
+        // ENHANCEMENT: Based on typical API wrapper structure, 
+        // we expect the reply to be nested inside a data object or directly in the result.
+        // We'll safely check for the 'reply' key in the result (which is the server's response data).
+        const replyText = result?.data?.reply || result?.reply;
+
+        if (!replyText) {
+            // Throw a local error if the expected data shape is not met
+            throw new Error('AI assistant generated an empty or malformed reply.');
         }
-        return { reply: response.data.reply };
+
+        // Return the standardized structure
+        return { reply: replyText };
+
     } catch (error) {
-        // apiClient interceptor already shows the error toast
+        // apiClient interceptor already handles showing the error toast.
+        // We re-throw the error so the calling hook/component can handle loading state or logging.
         throw error;
     }
 };
 
 /**
  * @desc Fetches generalized career recommendations from the AI.
- * (Used as a general utility, but the main onboarding call is in onboardingService.js)
- * @returns {Promise<Array<object>>} List of tasks/mentors.
+ * @returns {Promise<Array<object>>} List of tasks/mentors data.
  */
 export const getGeneralRecommendations = async () => {
     try {
         // GET /api/ai/recommendations
-        const response = await apiClient.get(`${AI_BASE_URL}/recommendations`);
-        return response.data;
+        const result = await apiClient.get(`${AI_BASE_URL}/recommendations`);
+        
+        // Ensure result is an array or valid data structure before returning
+        if (!Array.isArray(result.data) && !Array.isArray(result)) {
+             console.warn("Recommendations API returned non-array data:", result);
+        }
+        
+        // Return the data object (assuming the actual list is nested in result.data or is the result itself)
+        return result.data || result; 
     } catch (error) {
-        showToast('Could not fetch general recommendations.', 'error');
+        // FIX: Removed redundant showToast, as apiClient interceptor handles it globally.
         throw error;
     }
 };
+
+// Export all functions
+export default { sendChatMessage, getGeneralRecommendations };
