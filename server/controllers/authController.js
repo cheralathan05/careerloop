@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 import crypto from 'crypto';
 import User from '../models/User.js'; // Added .js extension
 import generateToken from '../utils/generateToken.js'; // Added .js extension
-import sendEmail from '../utils/sendEmail.js'; // Added .js extension
+import { sendEmail } from '../utils/sendEmail.js'; // <-- CORRECT: Named import
 import { generateAndSendOTP, verifyOTP } from '../services/otpService.js'; // Added .js extension
 import analyticsService from '../services/analyticsService.js'; // Added .js extension
 

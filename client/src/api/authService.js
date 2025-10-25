@@ -134,4 +134,3 @@ export default {
   resetPassword,
   googleLogin,
 };
-

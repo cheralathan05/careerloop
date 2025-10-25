@@ -1,7 +1,7 @@
 // server/services/feedbackService.js (ES Module Format)
 import Feedback from '../models/Feedback.js'; // Use ES Module import
 import { log as analyticsLog } from './analyticsService.js'; // Import the logger
-import sendEmail from '../utils/sendEmail.js'; // Utility for notifications
+import { sendEmail } from '../utils/sendEmail.js'; // <-- CORRECT: Named import
 
 /**
  * @desc Saves user feedback to the database and triggers necessary notifications.

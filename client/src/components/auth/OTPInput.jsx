@@ -15,7 +15,6 @@ export const OTPInput = ({ length = 6, onChange, autoFocus = true, disabled = fa
     // 🔁 Memoized callback for notifying parent
     const notifyParent = useCallback(
         (newOtp) => {
-            // Notify parent only when the OTP is full or when a change occurs
             if (onChange) onChange(newOtp.join(""));
         },
         [onChange]
@@ -82,8 +81,6 @@ export const OTPInput = ({ length = 6, onChange, autoFocus = true, disabled = fa
         const newOtp = [...otp];
         digits.forEach((digit, i) => {
             newOtp[i] = digit;
-            // NOTE: Directly setting value here is a common trick for paste, 
-            // but relying on React state update (setOtp) is cleaner.
         });
         setOtp(newOtp);
 
