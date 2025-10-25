@@ -1,9 +1,9 @@
-import React from 'react';
-import { useOnboarding } from '../../../hooks/useOnboarding';
-import { OnboardingLayout } from '../../../components/layout/OnboardingLayout';
-import { Button } from '../../../components/common/Button';
+import React from "react";
+import { useOnboarding } from '../../hooks/useOnboarding';
+import { OnboardingLayout } from '../../components/layout/OnboardingLayout';
+import { Button } from '../../components/common/Button';
 import { ArrowRight } from 'lucide-react';
-import { AIAssistantChat } from '../../../components/onboarding/AIAssistantChat';
+import { AIAssistantChat } from '../../components/ai-assistant/AIAssistantChat'; // ✅ Added missing import
 
 /**
  * @desc Phase 6: Interactive chat with the AI assistant.

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Cpu, Loader2 } from 'lucide-react';
+import { Cpu } from 'lucide-react';
 
 /**
- * @desc Specific loader component used while waiting for the AI service.
- * It communicates that complex, machine computation is occurring.
+ * @desc Loader component used when waiting for AI computation or processing.
+ * @param {string} text - Optional text to display next to the loader.
+ * @param {string} className - Optional additional classes for customization.
  */
 export const AILoader = ({ 
     text = "The AI is compiling your personalized report...", 
@@ -15,8 +16,10 @@ export const AILoader = ({
             role="status"
             aria-live="polite"
         >
-            {/* Using Cpu icon to symbolize computation */}
+            {/* Icon representing computation */}
             <Cpu className="w-7 h-7 text-indigo-600 animate-pulse mr-4" />
+            
+            {/* Descriptive text */}
             <span className="text-indigo-700 dark:text-indigo-300 font-medium text-lg">
                 {text}
             </span>

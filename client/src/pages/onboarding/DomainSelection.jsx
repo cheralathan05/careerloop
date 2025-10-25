@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useOnboarding } from '../../../hooks/useOnboarding';
-import { OnboardingLayout } from '../../../components/layout/OnboardingLayout';
-import { Button } from '../../../components/common/Button';
-import { DomainCard } from '../../../components/onboarding/DomainCard'; 
-import { AILoader } from '../../../components/loaders/AILoader';
+import { useOnboarding } from '../../hooks/useOnboarding';
+
+import { OnboardingLayout } from '../../components/layout/OnboardingLayout';
+import { Button } from '../../components/common/Button';
+import { DomainCard } from '../../components/onboarding/DomainCard'; 
+import { AILoader } from '../../components/loaders/AILoader';
 import { ArrowRight } from 'lucide-react';
-import { AlertBox } from '../../../components/ui/AlertBox';
+import { AlertBox } from '../../components/ui/AlertBox';
 
 /**
  * @desc Phase 3: User selects desired career domains based on AI recommendations.
@@ -13,7 +14,7 @@ import { AlertBox } from '../../../components/ui/AlertBox';
 const DomainSelectionPage = () => {
     const { 
         onboardingState: { domains }, 
-        handleDomainSelection, // This function moves the flow forward
+        handleDomainSelection, 
         isLoading,
         onboardingError
     } = useOnboarding();
@@ -41,13 +42,15 @@ const DomainSelectionPage = () => {
             alert("Please select at least one domain.");
             return;
         }
-        // Filter the full domain objects (name, score) to submit
         const finalSelection = domains.filter(d => selectedDomainNames.includes(d.name));
-        // Use the hook to save selection, trigger quiz generation, and navigate
         handleDomainSelection(finalSelection); 
     };
 
-    if (isLoading) return <OnboardingLayout title="Analyzing Domains"><AILoader text="Generating personalized quiz based on your choices..." /></OnboardingLayout>;
+    if (isLoading) return (
+        <OnboardingLayout title="Analyzing Domains">
+            <AILoader text="Generating personalized quiz based on your choices..." />
+        </OnboardingLayout>
+    );
     
     return (
         <OnboardingLayout title="Choose Your Path">

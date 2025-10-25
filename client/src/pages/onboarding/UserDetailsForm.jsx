@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { useOnboarding } from '../../../hooks/useOnboarding';
-import { OnboardingLayout } from '../../../components/layout/OnboardingLayout';
-import { InputField } from '../../../components/ui/InputField';
-import { MultiSelect } from '../../../components/ui/MultiSelect';
-import { Button } from '../../../components/common/Button';
-import { ResumeUpload } from '../../../components/onboarding/ResumeUpload';
-import { AILoader } from '../../../components/loaders/AILoader';
+import { useOnboarding } from '../../hooks/useOnboarding';
+import { OnboardingLayout } from '../../components/layout/OnboardingLayout';
+import { InputField } from '../../components/ui/InputField';
+import { MultiSelect } from '../../components/ui/MultiSelect';
+import { Button } from '../../components/common/Button';
+import { ResumeUpload } from '../../components/onboarding/ResumeUpload';
+import { AILoader } from '../../components/loaders/AILoader';
 import { ArrowRight } from 'lucide-react';
-import { AlertBox } from '../../../components/ui/AlertBox';
+import { AlertBox } from '../../components/ui/AlertBox';
 
 /**
  * @desc Phase 2: Collects user's current skills, interests, and background.
@@ -20,9 +20,8 @@ const UserDetailsFormPage = () => {
         onboardingError
     } = useOnboarding();
 
-    // Use local state to manage form changes before submission
     const [localDetails, setLocalDetails] = useState(details);
-    
+
     // Mock data for MultiSelect options
     const allSkills = ['React', 'Node.js', 'Python', 'Figma', 'AWS', 'SQL', 'TypeScript', 'MongoDB'];
     const allInterests = ['Frontend', 'Backend', 'Design', 'Data', 'Security', 'DevOps'];
@@ -35,18 +34,20 @@ const UserDetailsFormPage = () => {
         }
         handleDetailsSubmission(localDetails);
     };
-    
+
     const handleSkillsExtracted = (updatedDetails) => {
-        // Update local state with merged skills after resume upload
         setLocalDetails(updatedDetails);
     };
 
-
-    if (isLoading) return <OnboardingLayout title="Gathering Data"><AILoader text="Saving details and analyzing profile..." /></OnboardingLayout>;
+    if (isLoading) return (
+        <OnboardingLayout title="Gathering Data">
+            <AILoader text="Saving details and analyzing profile..." />
+        </OnboardingLayout>
+    );
 
     return (
         <OnboardingLayout title="Tell Us About You">
-            {onboardingError && <AlertBox type="error" message={onboardingError} className="mb-4"/>}
+            {onboardingError && <AlertBox type="error" message={onboardingError} className="mb-4" />}
             <form onSubmit={handleSubmit} className="space-y-4">
                 <InputField
                     label="Full Name"
@@ -61,7 +62,6 @@ const UserDetailsFormPage = () => {
                     placeholder="e.g., BSc Computer Science"
                 />
                 
-                {/* Resume Upload (Optional, non-blocking) */}
                 <ResumeUpload onSkillsExtracted={handleSkillsExtracted} />
                 
                 <MultiSelect

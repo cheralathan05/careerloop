@@ -1,103 +1,107 @@
 // client/src/api/authService.js
-
-import axios from 'axios';
-
-// ⚠️ Security Note:
-// If using HttpOnly cookies, storing the token in localStorage is optional.
-// Recommended: rely on cookies for session management.
+import axios from "axios";
 
 // --- ⚙️ CONFIGURATION ---
 
-const BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+// Uses .env variable; falls back to localhost if not set
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 const API_URL = `${BASE_URL}/api/auth`;
 
+// Axios instance
 const authAPI = axios.create({
   baseURL: API_URL,
-  headers: { 'Content-Type': 'application/json' },
-  withCredentials: true, // required for cookies
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true, // required for cookies (CORS)
 });
 
-// --- 🛑 CENTRALIZED ERROR HANDLER ---
-const handleApiError = (error, defaultMessage = 'An unknown error occurred.') => {
+// --- 🛡️ Attach Token Automatically ---
+authAPI.interceptors.request.use((config) => {
+  const token = localStorage.getItem("userToken");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// --- 🧩 Centralized Error Handler ---
+const handleApiError = (error, defaultMessage = "An unknown error occurred.") => {
   const errorMessage = error.response?.data?.message || error.message || defaultMessage;
-  console.error('API Error:', errorMessage, error);
+  console.error("API Error:", errorMessage);
   throw new Error(errorMessage);
 };
 
-// --- 🧩 AUTH FUNCTIONS ---
+// --- 🔐 AUTH FUNCTIONS ---
 
 // SIGNUP
 export const signup = async (data) => {
   try {
-    const res = await authAPI.post('/signup', data);
+    const res = await authAPI.post("/signup", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, 'Signup failed. Please check your credentials.');
+    handleApiError(err, "Signup failed. Please check your details.");
   }
 };
 
 // SEND OTP
 export const sendOtp = async (data) => {
   try {
-    const res = await authAPI.post('/send-otp', data);
+    const res = await authAPI.post("/send-otp", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, 'Failed to send OTP. Please check the email.');
+    handleApiError(err, "Failed to send OTP. Please verify your email.");
   }
 };
 
 // VERIFY OTP
 export const verifyOtp = async (data) => {
   try {
-    const res = await authAPI.post('/verify-otp', data);
-    // Save token if returned
-    if (res.data?.token) localStorage.setItem('userToken', res.data.token);
+    const res = await authAPI.post("/verify-otp", data);
+    if (res.data?.token) localStorage.setItem("userToken", res.data.token);
     return res.data;
   } catch (err) {
-    handleApiError(err, 'OTP verification failed. The code may be invalid or expired.');
+    handleApiError(err, "OTP verification failed. Code may be invalid or expired.");
   }
 };
 
 // LOGIN
 export const login = async (credentials) => {
   try {
-    const res = await authAPI.post('/login', credentials);
-    if (res.data?.token) localStorage.setItem('userToken', res.data.token);
+    const res = await authAPI.post("/login", credentials);
+    if (res.data?.token) localStorage.setItem("userToken", res.data.token);
     return res.data;
   } catch (err) {
-    handleApiError(err, 'Login failed. Invalid email or password.');
+    handleApiError(err, "Login failed. Invalid email or password.");
   }
 };
 
 // LOGOUT
 export const logout = async () => {
   try {
-    localStorage.removeItem('userToken');
-    await authAPI.post('/logout'); // Clear server session/cookie
-    return { success: true, message: 'Logged out successfully' };
+    await authAPI.post("/logout");
+    localStorage.removeItem("userToken");
+    return { success: true, message: "Logged out successfully." };
   } catch (err) {
-    console.warn('Server logout failed, client cleared state:', err.message);
-    return { success: false, message: 'Logout completed locally, but server session may remain.' };
+    console.warn("Server logout failed, client state cleared:", err.message);
+    localStorage.removeItem("userToken");
+    return { success: false, message: "Logged out locally; server session may persist." };
   }
 };
 
 // FORGOT PASSWORD
 export const forgotPassword = async (data) => {
   try {
-    const res = await authAPI.post('/forgot-password', data);
+    const res = await authAPI.post("/forgot-password", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, 'Failed to send password reset link.');
+    handleApiError(err, "Failed to send password reset link.");
   }
 };
 
 // RESET PASSWORD
 export const resetPassword = async (data) => {
   try {
-    const res = await authAPI.post('/reset-password', data);
+    const res = await authAPI.post("/reset-password", data);
     return res.data;
   } catch (err) {
-    handleApiError(err, 'Password reset failed. The link may be invalid or expired.');
+    handleApiError(err, "Password reset failed. Link may be invalid or expired.");
   }
 };
 

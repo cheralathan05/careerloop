@@ -1,13 +1,13 @@
 import React from 'react';
-import { useOnboarding } from '../../../hooks/useOnboarding';
-import { OnboardingLayout } from '../../../components/layout/OnboardingLayout';
-import { Button } from '../../../components/common/Button';
-import { Card } from '../../../components/common/Card';
-import { SkillRadarChart } from '../../../components/charts/SkillRadarChart';
-import { SkillProgressGraph } from '../../../components/charts/SkillProgressGraph';
-import { AILoader } from '../../../components/loaders/AILoader';
+import { useOnboarding } from '../../hooks/useOnboarding';
+import { OnboardingLayout } from '../../components/layout/OnboardingLayout';
+import { Button } from '../../components/common/Button';
+import { Card } from '../../components/common/Card';
+import { SkillRadarChart } from '../../components/charts/SkillRadarChart';
+import { SkillProgressGraph } from '../../components/charts/SkillProgressGraph';
+import { AILoader } from '../../components/loaders/AILoader';
 import { ArrowRight, Zap, BookOpen, CheckCircle } from 'lucide-react';
-import { AlertBox } from '../../../components/ui/AlertBox';
+import { AlertBox } from '../../components/ui/AlertBox';
 
 /**
  * @desc Phase 5: Displays the final AI-generated summary report.
@@ -20,15 +20,22 @@ const OnboardingSummaryPage = () => {
         onboardingError 
     } = useOnboarding();
 
-    // Safely calculate average score for the progress graph
     const totalScoreItems = Object.keys(skillScores).length;
     const averageScore = totalScoreItems 
         ? Object.values(skillScores).reduce((sum, score) => sum + score, 0) / totalScoreItems 
         : 0;
 
-    if (isLoading || !summary) return <OnboardingLayout title="Analyzing Results"><AILoader text="Compiling final report and personalized recommendations..." /></OnboardingLayout>;
+    if (isLoading || !summary) return (
+        <OnboardingLayout title="Analyzing Results">
+            <AILoader text="Compiling final report and personalized recommendations..." />
+        </OnboardingLayout>
+    );
     
-    if (onboardingError) return <OnboardingLayout title="Error"><AlertBox type="error" message={onboardingError} /></OnboardingLayout>;
+    if (onboardingError) return (
+        <OnboardingLayout title="Error">
+            <AlertBox type="error" message={onboardingError} />
+        </OnboardingLayout>
+    );
 
     const { radar: radarData, recommendedTasks: tasks, suggestedCourses: courses } = summary;
 
@@ -39,7 +46,6 @@ const OnboardingSummaryPage = () => {
             </h2>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                
                 {/* Radar Chart (Col 1 & 2) */}
                 <Card className="lg:col-span-2">
                     <SkillRadarChart data={radarData} title="Proficiency Across Domains" />

@@ -1,13 +1,13 @@
 import React from 'react';
-import { useOnboarding } from '../../../hooks/useOnboarding';
-import { useSkillAssessment } from '../../../hooks/useSkillAssessment';
-import { OnboardingLayout } from '../../../components/layout/OnboardingLayout';
-import { Button } from '../../../components/common/Button';
-import { ProgressBar } from '../../../components/onboarding/ProgressBar';
-import { SkillAssessmentCard } from '../../../components/onboarding/SkillAssessmentCard';
-import { AILoader } from '../../../components/loaders/AILoader';
+import { useOnboarding } from '../../hooks/useOnboarding';
+import { useSkillAssessment } from '../../hooks/useSkillAssessment';
+import { OnboardingLayout } from '../../components/layout/OnboardingLayout';
+import { Button } from '../../components/common/Button';
+import { ProgressBar } from '../../components/onboarding/ProgressBar';
+import { SkillAssessmentCard } from '../../components/onboarding/SkillAssessmentCard';
+import { AILoader } from '../../components/loaders/AILoader';
 import { CheckCircle } from 'lucide-react';
-import { AlertBox } from '../../../components/ui/AlertBox';
+import { AlertBox } from '../../components/ui/AlertBox';
 
 /**
  * @desc Phase 4: Displays the AI-generated quiz and collects user answers.
@@ -20,7 +20,6 @@ const SkillAssessmentPage = () => {
         onboardingError
     } = useOnboarding();
 
-    // Use the dedicated hook for quiz state management
     const { 
         allQuestions, 
         totalQuestions, 
@@ -30,20 +29,27 @@ const SkillAssessmentPage = () => {
         handleAnswer, 
         prepareSubmissionPayload 
     } = useSkillAssessment(quiz);
-    
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!isComplete) {
             alert(`Please answer all ${totalQuestions} questions before submitting.`);
             return;
         }
-        // Pass the prepared payload to the useOnboarding hook
         handleAssessmentSubmission(prepareSubmissionPayload());
     };
 
-    if (isLoading) return <OnboardingLayout title="Generating Quiz" className="max-w-xl"><AILoader text="Compiling final assessment..." /></OnboardingLayout>;
-    
-    if (totalQuestions === 0) return <OnboardingLayout title="Assessment"><AlertBox type="error" message="Quiz failed to load. Please restart from domain selection."/></OnboardingLayout>;
+    if (isLoading) return (
+        <OnboardingLayout title="Generating Quiz" className="max-w-xl">
+            <AILoader text="Compiling final assessment..." />
+        </OnboardingLayout>
+    );
+
+    if (totalQuestions === 0) return (
+        <OnboardingLayout title="Assessment">
+            <AlertBox type="error" message="Quiz failed to load. Please restart from domain selection." />
+        </OnboardingLayout>
+    );
 
     return (
         <OnboardingLayout title="Skill Assessment" className="max-w-3xl">
