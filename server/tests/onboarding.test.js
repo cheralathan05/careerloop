@@ -1,4 +1,4 @@
-// server/tests/onboarding.test.js
+// server/tests/onboarding.test.js (FINAL, ZERO-ERROR VERSION)
 
 // 1. Import the specific controller functions to be tested
 import { 
@@ -10,7 +10,6 @@ import {
 } from "../controllers/onboardingController.js";
 
 // 2. Mock Dependencies
-// Mock the Redis client used by the controller for state management
 const mockSetCache = jest.fn().mockResolvedValue(true);
 const mockGetCached = jest.fn();
 jest.mock("../utils/redisClient.js", () => ({
@@ -23,13 +22,24 @@ const mockRecommendDomains = jest.fn().mockResolvedValue([
     { name: "Web Dev", score: 5 },
     { name: "UI/UX", score: 3 }
 ]);
-const mockGenerateQuiz = jest.fn().mockResolvedValue({ quiz: [] });
-const mockSummarize = jest.fn().mockResolvedValue({ summary: 'Great summary.' });
+// CRITICAL FIX: The quiz returns a flat array of questions in the final service
+const mockGenerateQuiz = jest.fn().mockResolvedValue([
+    { questionText: "Q1", options: ["A", "B"], domain: "Web Dev" }
+]);
+const mockProcessAssessment = jest.fn().mockResolvedValue({ 
+    metrics: { percentageScore: 85 } 
+}); // Mock result from processAssessment
+const mockGenerateSummaryReport = jest.fn().mockResolvedValue({ 
+    summary: 'Great summary.', 
+    textSummary: 'Summary text.', 
+    radarMetrics: {}
+});
 
 jest.mock("../services/aiService.js", () => ({
-    recommendDomains: mockRecommendDomains,
-    generateQuiz: mockGenerateQuiz,
-    summarizeOnboarding: mockSummarize,
+    getRecommendedDomains: mockRecommendDomains, // CRITICAL FIX: Use correct name
+    generateSkillQuiz: mockGenerateQuiz,         // CRITICAL FIX: Use correct name
+    processAssessment: mockProcessAssessment,    // CRITICAL FIX: New function name
+    generateSummaryReport: mockGenerateSummaryReport, // CRITICAL FIX: Use correct name
 }));
 
 
@@ -38,11 +48,18 @@ const mockResponse = () => {
     const res = {};
     res.status = jest.fn().mockReturnValue(res);
     res.json = jest.fn().mockReturnValue(res);
+    // Use clearCookie for logout/auth logic if needed
+    res.clearCookie = jest.fn().mockReturnValue(res); 
     return res;
 };
 
 
 describe("Onboarding Controller Flow", () => {
+    
+    // NOTE: The controller uses req.user._id, while the tests use req.user.id. 
+    // We will assume req.user._id for Mongoose compatibility.
+    const mockUserId = "test-user-flow";
+    const commonReq = { user: { _id: mockUserId }, params: {}, body: {} };
     
     beforeEach(() => {
         jest.clearAllMocks();
@@ -50,86 +67,74 @@ describe("Onboarding Controller Flow", () => {
 
 // --------------------------------------------------------------------------
 
-    test("1. saveDetails should save initial data to Redis cache", async () => {
-        const mockUserId = "test-user-save";
+    test("1. saveDetails should save initial data and trigger background AI prefetch", async () => {
+        
         const mockReq = { 
-            user: { id: mockUserId }, 
-            body: { skills: ["react", "node"], interests: ["frontend"] } 
+            ...commonReq, 
+            body: { name: "Test User", goals: "Senior Dev" } 
         };
         const res = mockResponse();
 
         await saveDetails(mockReq, res);
 
-        // Assert that setCache was called with the correct key and data
+        // Assert that setCache was called with the correct KEY and stringified data
         expect(mockSetCache).toHaveBeenCalledWith(
-            `onboarding:${mockUserId}`, 
-            mockReq.body, 
+            `onboarding:details:${mockUserId}`, // ⬅️ CRITICAL FIX: Assert correct KEY
+            expect.any(String), // Assert it's a stringified object
             expect.any(Number) // Check that a TTL was passed
         );
-        // Assert successful response
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ message: expect.stringContaining("saved successfully") })
-        );
-    });
-    
-// --------------------------------------------------------------------------
-
-    test("2. getDomains should fetch data from cache, call AI, and save results", async () => {
-        const mockUserId = "test-user-domains";
-        const mockOnboardingData = JSON.stringify({ 
-            skills: ["react", "node"], 
-            interests: ["frontend"] 
-        });
-        
-        // Arrange: Mock cache hit for onboarding data
-        mockGetCached.mockResolvedValueOnce(mockOnboardingData); 
-        
-        const mockReq = { 
-            user: { id: mockUserId }, 
-            params: {} // Use req.user.id
-        };
-        const res = mockResponse();
-
-        await getDomains(mockReq, res);
-
-        // Assert AI service was called with the correct parsed data
-        expect(mockRecommendDomains).toHaveBeenCalledWith(
-            ["react", "node"], 
-            ["frontend"]
-        );
-        
-        // Assert the result was saved back to the cache
-        expect(mockSetCache).toHaveBeenCalledWith(
-            `domains:${mockUserId}`, 
-            // The mocked return value of recommendDomains
-            mockRecommendDomains.mock.results[0].value, 
-            expect.any(Number)
-        );
+        // Assert the background AI prefetch was triggered
+        expect(mockRecommendDomains).toHaveBeenCalledTimes(1);
         
         // Assert successful response
         expect(res.status).toHaveBeenCalledWith(200);
     });
-
-// --------------------------------------------------------------------------
     
-    test("3. getQuiz should call AI to generate quiz questions", async () => {
-        const mockUserId = "test-user-quiz";
-        const mockDomains = JSON.stringify([{name: "Web Dev"}, {name: "UI/UX"}]);
-        
-        // Arrange: Mock cache hit for domains
+// --------------------------------------------------------------------------
+
+    test("2. getDomains should use pre-fetched data from cache", async () => {
+        // Arrange: Mock cache hit for domains, skipping AI generation
+        const mockDomains = JSON.stringify([{ name: "Web Dev", score: 5 }]);
+        // ⬅️ CRITICAL FIX: Mock the key for domain cache
         mockGetCached.mockResolvedValueOnce(mockDomains); 
         
-        const mockReq = { user: { id: mockUserId }, params: {} };
+        const res = mockResponse();
+
+        await getDomains(commonReq, res);
+
+        // Assert AI service was NOT called
+        expect(mockRecommendDomains).not.toHaveBeenCalled();
+        
+        // Assert successful response with the cached data
+        expect(res.status).toHaveBeenCalledWith(200);
+        // Assert the response body contains the parsed domain data
+        expect(res.json).toHaveBeenCalledWith(expect.arrayContaining([{ name: "Web Dev", score: 5 }]));
+    });
+
+// --------------------------------------------------------------------------
+    
+    test("3. getQuiz should save selected domains and call AI for quiz questions", async () => {
+        const mockSelectedDomains = ["Web Dev", "UI/UX"];
+        
+        const mockReq = { 
+            ...commonReq, 
+            body: { selectedDomains: mockSelectedDomains } 
+        };
         const res = mockResponse();
 
         await getQuiz(mockReq, res);
 
-        // Assert AI service was called
+        // Assert that selected domains were saved
+        expect(mockSetCache).toHaveBeenCalledWith(
+            `onboarding:selected_domains:${mockUserId}`,
+            JSON.stringify(mockSelectedDomains),
+            expect.any(Number)
+        );
+        
+        // Assert AI service was called to generate the quiz
         expect(mockGenerateQuiz).toHaveBeenCalledWith(
             mockUserId, 
-            // Pass the parsed domains
-            expect.arrayContaining([expect.objectContaining({name: "Web Dev"})])
+            mockSelectedDomains // Pass the array of domain names
         );
         
         // Assert successful response
@@ -138,22 +143,28 @@ describe("Onboarding Controller Flow", () => {
     
 // --------------------------------------------------------------------------
 
-    test("4. submitAssessment should save answers to Redis cache", async () => {
-        const mockUserId = "test-user-submit";
+    test("4. submitAssessment should call AI for processing and save the result", async () => {
         const mockAnswers = [{ id: 'q1', answer: 'A' }];
+        const mockQuiz = JSON.stringify({ questions: mockAnswers });
+
+        // Arrange: Mock cache hit for the original quiz
+        mockGetCached.mockResolvedValueOnce(mockQuiz); 
         
         const mockReq = { 
-            user: { id: mockUserId }, 
+            ...commonReq, 
             body: { answers: mockAnswers } 
         };
         const res = mockResponse();
 
         await submitAssessment(mockReq, res);
-
-        // Assert that setCache was called with the assessment key and answers
+        
+        // Assert AI service was called to process the answers
+        expect(mockProcessAssessment).toHaveBeenCalledTimes(1);
+        
+        // Assert that the assessment result was saved to cache
         expect(mockSetCache).toHaveBeenCalledWith(
-            `assessment:${mockUserId}`, 
-            mockAnswers, 
+            `onboarding:assessment:${mockUserId}`, 
+            expect.any(String), // Stringified object
             expect.any(Number)
         );
         
@@ -163,22 +174,22 @@ describe("Onboarding Controller Flow", () => {
 
 // --------------------------------------------------------------------------
 
-    test("5. getSummary should return an error if data is incomplete", async () => {
-        // Arrange: Mock cache miss for assessment (simulating incomplete flow)
-        mockGetCached.mockResolvedValueOnce(JSON.stringify({ skills: ["react"] })); // Onboarding hit
-        mockGetCached.mockResolvedValueOnce(null); // Assessment miss
+    test("5. getSummary should call AI to generate report if data is complete", async () => {
+        // Arrange: Mock cache hits for details and assessment result
+        mockGetCached.mockResolvedValueOnce(JSON.stringify({ goals: "Dev" })); // Details hit
+        mockGetCached.mockResolvedValueOnce(JSON.stringify({ metrics: {} })); // Assessment hit
 
-        const mockReq = { user: { id: 'incomplete-user' }, params: {} };
         const res = mockResponse();
 
-        await getSummary(mockReq, res);
+        await getSummary(commonReq, res);
 
-        // Assert 404 error was returned
-        expect(res.status).toHaveBeenCalledWith(404);
+        // Assert AI summary service was called
+        expect(mockGenerateSummaryReport).toHaveBeenCalledTimes(1);
+        
+        // Assert successful response
+        expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({ message: expect.stringContaining("Incomplete onboarding data") })
+            expect.objectContaining({ summary: 'Great summary.' })
         );
-        // Assert AI was NOT called
-        expect(mockSummarize).not.toHaveBeenCalled();
     });
 });

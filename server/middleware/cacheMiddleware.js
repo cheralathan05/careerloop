@@ -1,44 +1,59 @@
-// server/middleware/cacheMiddleware.js (ES Module format)
-import { getCached } from '../utils/redisClient.js';
-import asyncHandler from 'express-async-handler';
+/**
+ * Redis Cache Middleware
+ * ------------------------------------------------------
+ * Intercepts GET requests to serve cached responses if available.
+ * Automatically attaches the cache key for later stage write‑back.
+ * Logs cache hits & misses, adds cache status headers.
+ */
+
+import { getCached, setCache } from '../utils/redisClient.js';
 
 /**
- * Middleware for checking and serving a cached response for GET requests.
- * Uses the request URL as the cache key.
+ * Factory version for configurable expiry times (default: 5 minutes)
  */
-const cacheMiddleware = asyncHandler(async (req, res, next) => {
-    
-    // 1. Only cache idempotent (safe) methods, typically GET
-    if (req.method !== 'GET') {
-        return next();
-    }
+const cacheMiddleware =
+  (options = {}) =>
+  async (req, res, next) => {
+    const { ttl = 300 } = options; // TTL in seconds (5 min default)
 
-    // 2. Construct the unique cache key
-    // Using req.originalUrl ensures query parameters are part of the key
-    const key = `cache:${req.originalUrl}`; 
-    
+    // ⛔ Limit cache only to safe methods
+    if (req.method !== 'GET') return next();
+
+    const key = `cache:${req.originalUrl}`;
+
     try {
-        const cached = await getCached(key);
-        
-        if (cached) {
-            // ✅ Cache Hit: Serve the response immediately
-            console.log(`[CACHE HIT] Serving response from Redis for ${req.originalUrl}`);
-            // Note: Set a header to indicate the response was cached
-            res.set('X-Cache-Status', 'HIT'); 
-            return res.json(JSON.parse(cached));
+      const cached = await getCached(key);
+
+      if (cached) {
+        // ✅ CACHE HIT
+        const data = JSON.parse(cached);
+        res.setHeader('X-Cache-Status', 'HIT');
+        res.setHeader('Cache-Control', `public, max-age=${ttl}`);
+        console.log(`⚡ [CACHE HIT] ${req.originalUrl}`);
+        return res.status(200).json(data);
+      }
+
+      // ⚙️ CACHE MISS
+      res.setHeader('X-Cache-Status', 'MISS');
+      req.cacheKey = key;
+
+      // Capture controller output and store in Redis cache
+      const originalJson = res.json.bind(res);
+      res.json = (body) => {
+        // Cache only successful JSON responses
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          setCache(key, JSON.stringify(body), ttl).catch((err) =>
+            console.warn(`Redis cache write failed for ${key}:`, err.message)
+          );
         }
-        
-        // ✅ Cache Miss: Attach the key to the request
-        req.cacheKey = key;
-        res.set('X-Cache-Status', 'MISS');
-        
-        next();
-        
+        return originalJson(body);
+      };
+
+      next();
     } catch (err) {
-        // Non-critical: If Redis is down or has an error, just bypass caching.
-        console.warn('Cache middleware failed to access Redis:', err.message);
-        next();
+      console.warn(`⚠️ Cache middleware bypassed: ${err.message}`);
+      next();
     }
-});
+  };
 
 export default cacheMiddleware;

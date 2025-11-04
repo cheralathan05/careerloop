@@ -1,30 +1,46 @@
-// server/controllers/courseController.js
-const asyncHandler = require('express-async-handler');
-const courseService = require('../services/courseSuggestionService');
-const { success } = require('../utils/responseHandler'); // Assuming you have this utility
+/**
+ * Course Controller — Suggests courses by career domain
+ * -------------------------------------------------------
+ * Handles recommendation queries by domain (public or authenticated route).
+ * Follows MVC + service-layer architecture principles.
+ */
+
+import courseService from '../services/courseSuggestionService.js';
+import { success } from '../utils/responseHandler.js';
 
 /**
  * @desc Get course suggestions based on a specific career domain.
  * @route GET /api/courses/suggest/:domain
- * @access Public/Authenticated (Depending on your requirement)
+ * @access Public or Authenticated (configurable)
  */
-exports.getByDomain = asyncHandler(async (req, res) => {
+export const getByDomain = async (req, res) => {
+  try {
     const { domain } = req.params;
 
-    if (!domain) {
-        return res.status(400).json({ message: 'Domain parameter is required for suggestion.' });
+    // Validate domain name
+    if (!domain || typeof domain !== 'string') {
+      return res
+        .status(400)
+        .json({ message: 'Domain parameter is required and must be a string.' });
     }
 
-    // Sanitize or validate the domain parameter before passing it to the service
+    // Sanitize/normalize input
     const safeDomain = domain.toLowerCase().trim();
 
-    // The service handles the complex logic (e.g., calling an AI, querying a DB, or scraping)
+    // Retrieve courses via the service layer
     const courses = await courseService.suggest(safeDomain);
 
-    // Use a consistent response handler
-    success(res, 200, { 
-        domain: safeDomain,
-        count: courses.length,
-        courses: courses 
+    // Return standardized response
+    success(res, 200, {
+      domain: safeDomain,
+      count: Array.isArray(courses) ? courses.length : 0,
+      courses: courses || [],
     });
-});
+  } catch (error) {
+    console.error('❌ Course suggestion error:', error.message);
+    res.status(500).json({
+      message: 'Failed to generate course suggestions.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};

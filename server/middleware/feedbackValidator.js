@@ -1,24 +1,33 @@
-// server/middleware/ratingValidationMiddleware.js (ES Module format)
-
 /**
- * @desc Middleware to validate the 'rating' field in the request body.
- * Ensures the rating exists and is between 0 and 5, inclusive.
+ * Rating Validation Middleware
+ * ------------------------------------------------------
+ * Ensures a valid numeric 'rating' between 0 and 5 is present in the request body.
+ * Helps enforce consistent data standards before controller logic executes.
  */
-const ratingValidation = (req, res, next) => {
-    // Note: We use parseFloat to handle string-encoded numbers from the request body
-    const rating = parseFloat(req.body.rating); 
 
-    // 1. Check for null/undefined/NaN or out-of-range value
-    if (rating == null || isNaN(rating) || rating < 0 || rating > 5) {
-        res.status(400); // Set the HTTP status code
-        // Pass a new Error object to the central error handler
-        return next(new Error('Invalid rating. A numerical value between 0 and 5 is required.')); 
+export default function ratingValidation(req, res, next) {
+  try {
+    // 1️⃣ Parse rating value (handles both numeric & string inputs)
+    const rawRating = req.body?.rating;
+    const rating = parseFloat(rawRating);
+
+    // 2️⃣ Validate range, NaN, or missing values
+    if (rawRating === undefined || rawRating === null || isNaN(rating)) {
+      res.status(400);
+      throw new Error('Rating field is required and must be a number between 0 and 5.');
     }
-    
-    // 2. Attach the clean, parsed number back to the body/request if needed
-    req.body.rating = rating; 
-    
-    next();
-};
 
-export default ratingValidation;
+    if (rating < 0 || rating > 5) {
+      res.status(400);
+      throw new Error('Invalid rating. The value must be between 0 and 5.');
+    }
+
+    // 3️⃣ Attach normalized, type‑safe rating to request object
+    req.body.rating = rating;
+
+    next(); // All good — move to controller
+  } catch (err) {
+    // 4️⃣ Forward clean error to the global error handler
+    next(err);
+  }
+}

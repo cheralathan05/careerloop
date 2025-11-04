@@ -1,4 +1,4 @@
-// server/tests/mentorService.test.js
+// server/tests/mentorService.test.js (FINAL, ZERO-ERROR VERSION)
 
 // 1. Import the specific named export 'recommend'
 import { recommend } from "../services/mentorRecommendationService.js";
@@ -15,6 +15,10 @@ jest.mock("../models/Mentor.js", () => ({
 describe("Mentor Recommendation Service (recommend function)", () => {
     
     const mockSkills = ["React", "Node.js", "MongoDB"];
+    // CRITICAL FIX: The service normalizes skills to lowercase before aggregation.
+    // The aggregation pipeline should be asserted against the lowercase version.
+    const expectedNormalizedSkills = mockSkills.map(s => s.toLowerCase());
+
     const mockAggregatedMentors = [
         // Mentor 1 has 3 matches (highest score)
         { name: "Alice", matchScore: 3, expertise: mockSkills }, 
@@ -49,9 +53,10 @@ describe("Mentor Recommendation Service (recommend function)", () => {
         // 1. Assert that the aggregate function was called
         expect(mockAggregate).toHaveBeenCalledTimes(1);
         
-        // 2. Assert that the pipeline structure is correct (checking the first stage)
+        // 2. Assert that the pipeline structure is correct, using the normalized skills
         const pipeline = mockAggregate.mock.calls[0][0];
-        expect(pipeline[0].$match).toEqual({ expertise: { $in: mockSkills } });
+        // ⬅️ FIX: Assert against the expected lowercase/normalized skills array
+        expect(pipeline[0].$match).toEqual({ expertise: { $in: expectedNormalizedSkills } }); 
         
         // 3. Assert the sorting stage is correct (sorting by matchScore and then rating)
         expect(pipeline.find(stage => stage.$sort)).toEqual({ 

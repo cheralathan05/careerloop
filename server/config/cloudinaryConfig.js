@@ -1,29 +1,38 @@
-// server/config/cloudinaryConfig.js
-import { v2 as cloudinary } from "cloudinary";
-import dotenv from "dotenv";
+/**
+ * Cloudinary Configuration
+ * ------------------------------------------------------
+ * Handles secure Cloudinary initialization using environment variables.
+ * Ensures credentials are validated before configuration.
+ */
+
+import { v2 as cloudinary } from 'cloudinary';
+import dotenv from 'dotenv';
 dotenv.config();
 
-/**
- * Configuration and Initialization for the Cloudinary service.
- */
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-const API_KEY = process.env.CLOUDINARY_API_KEY;
-const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+// 1️⃣ Load required environment variables
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+const API_KEY = process.env.CLOUDINARY_API_KEY?.trim();
+const API_SECRET = process.env.CLOUDINARY_API_SECRET?.trim();
 
-// 1. Check for required environment variables
+// 2️⃣ Validate configuration
 if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
-    console.error("FATAL ERROR: Cloudinary credentials (CLOUD_NAME, API_KEY, or API_SECRET) are missing.");
-    // In a critical server environment, you might want to stop the process:
-    // process.exit(1); 
+  console.error(
+    '❌ FATAL ERROR: Missing Cloudinary credentials. Please ensure the following are set in .env:\n' +
+      '➡️ CLOUDINARY_CLOUD_NAME\n➡️ CLOUDINARY_API_KEY\n➡️ CLOUDINARY_API_SECRET'
+  );
+  process.exit(1); // Prevent app start without credentials (critical for image handling)
 }
 
-// 2. Configure Cloudinary
+// 3️⃣ Initialize Cloudinary
 cloudinary.config({
   cloud_name: CLOUD_NAME,
   api_key: API_KEY,
   api_secret: API_SECRET,
-  secure: true, // Always use HTTPS
+  secure: true, // Always use HTTPS URLs
+  timeout: 60000, // Default timeout: 60s for large uploads
 });
 
-// 3. Export the configured instance
+// 4️⃣ Optional check & confirmation
+console.log(`☁️  Cloudinary configured successfully for cloud: '${CLOUD_NAME}'`);
+
 export default cloudinary;

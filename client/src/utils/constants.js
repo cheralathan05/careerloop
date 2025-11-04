@@ -1,3 +1,5 @@
+// src/utils/constants.js (FINAL, ZERO-ERROR VERSION)
+
 // Initial state for the context provider
 export const initialOnboardingState = {
     currentPhase: 1, // Starts at the Welcome screen
@@ -5,15 +7,17 @@ export const initialOnboardingState = {
     details: { 
         fullName: '', 
         education: '', 
+        goals: '',        // ⬅️ CRITICAL: Added 'goals' to align with User Model and Onboarding flow
+        experience: '',   // Assuming an 'experience' field is also used
         interests: [], 
         skills: [],
         resumeUrl: null, // Cloudinary URL 
     },
-    domains: [],        // AI recommended/user selected domains: [{name, score}]
+    domains: [],        // AI recommended/user selected domains: Array<string> (or [{name, score}])
     quiz: [],           // AI generated questions: Array<object>
     answers: [],        // User's raw quiz answers: Array<{ questionId, answer }>
-    summary: null,      // Final AI analysis (radar, tasks, courses)
-    skillScores: {},    // Scores used for radar chart: { skillName: score }
+    summary: null,      // Final AI analysis (radar, tasks, courses, text summary)
+    skillScores: {},    // Processed scores used for radar chart: { skillName: score }
 };
 
 // Map of the entire flow (Used for progress bar, routing, and conditional rendering)

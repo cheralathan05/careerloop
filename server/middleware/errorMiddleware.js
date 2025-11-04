@@ -1,41 +1,46 @@
-// server/middleware/errorMiddleware.js (ES Module format)
+/**
+ * Error Handling Middleware Suite
+ * ------------------------------------------------------
+ * 1️⃣ notFound — handles requests to unknown routes
+ * 2️⃣ errorHandler — central processor for all thrown or forwarded errors
+ * Compatible with Express 5’s native async error capturing.
+ */
 
 /**
- * @desc Middleware to handle 404 - Not Found errors for any unhandled routes.
+ * Handle 404 - Not Found errors (for unregistered routes)
  */
-const notFound = (req, res, next) => {
-    // 1. Create a clear Error object
-    const error = new Error(`Not Found - ${req.originalUrl}`);
-    
-    // 2. Set the response status to 404
-    res.status(404);
-    
-    // 3. Pass the error object to the next error handling middleware
-    next(error); 
+export const notFound = (req, res, next) => {
+  const message = `Not Found - ${req.originalUrl}`;
+  const error = new Error(message);
+  res.status(404);
+  next(error);
 };
 
 /**
- * @desc General error handling middleware (with four arguments: err, req, res, next).
- * This catches all errors passed via next(error) or thrown by controllers/middleware.
+ * General error handler
+ * Signature: (err, req, res, next)
+ * Captures thrown errors and ensures uniform JSON responses.
  */
-const errorHandler = (err, req, res, next) => {
-    
-    // 1. Determine the status code
-    // If res.statusCode is 200 (meaning an error was thrown before a status was set), 
-    // default to 500 (Internal Server Error). Otherwise, use the existing status.
-    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+export const errorHandler = (err, req, res, next) => {
+  // 1️⃣ Normalize the status code
+  const code = res.statusCode && res.statusCode !== 200 ? res.statusCode : 500;
 
-    // 2. Set the status and send the JSON response
-    res.status(statusCode).json({
-        message: err.message,
-        // Only include the stack trace in development for security
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    });
-    
-    // Do not call next() here unless you have more error handlers to process.
-};
+  // 2️⃣ Create structured error payload
+  const payload = {
+    status: 'error',
+    code,
+    message: err.message || 'Internal Server Error',
+  };
 
-export {
-    notFound,
-    errorHandler,
+  // 3️⃣ Add stack trace in development mode
+  if (process.env.NODE_ENV !== 'production') {
+    payload.stack = err.stack;
+  }
+
+  // 4️⃣ Log critical errors (production‑safe)
+  if (code >= 500) {
+    console.error(`❌ [${req.method}] ${req.originalUrl} → ${err.message}`);
+  }
+
+  res.status(code).json(payload);
 };

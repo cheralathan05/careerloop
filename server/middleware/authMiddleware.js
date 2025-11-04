@@ -1,48 +1,70 @@
-// server/middleware/authMiddleware.js (ES Module format)
+/**
+ * Auth Middleware — Protect Routes Using JWT
+ * ------------------------------------------------------
+ * Validates incoming requests by verifying JWTs in the Authorization header.
+ * Attaches the corresponding user object to req.user for downstream access.
+ */
+
 import jwt from 'jsonwebtoken';
 import asyncHandler from 'express-async-handler';
-import User from '../models/User.js';         // Use ES Module path
-import jwtConfig from '../config/jwtConfig.js'; // Import your configuration
+import User from '../models/User.js';
+import { jwtConfig } from '../config/jwtConfig.js'; // Named export from config
 
 /**
- * Middleware to protect routes: requires a valid JWT token.
- * Ensures that only authenticated users can access protected resources.
+ * Middleware to protect routes (Authenticated Access)
  */
-const protect = asyncHandler(async (req, res, next) => {
+export const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  // 1. Check if token exists in Authorization header (Bearer <token>)
-  if (req.headers.authorization?.startsWith('Bearer')) {
-    try {
-      // Extract the token (e.g., 'Bearer abc.123.xyz' -> 'abc.123.xyz')
-      token = req.headers.authorization.split(' ')[1];
+  // 1️⃣ Check if Authorization header with Bearer token exists
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  }
 
-      // 2. Verify the JWT token using the secret from your config
-      // Note: The payload generally contains { id: user._id }
-      const decoded = jwt.verify(token, jwtConfig.secret);
+  if (!token) {
+    return res.status(401).json({ message: 'Not authorized, token missing.' });
+  }
 
-      // 3. Attach user to the request (excluding password field)
-      // Use .select('-password') for security.
-      req.user = await User.findById(decoded.id).select('-password');
-      
-      // If user exists, but wasn't found (e.g., user was deleted)
-      if (!req.user) {
-        return res.status(401).json({ message: 'User not found' });
-      }
+  try {
+    // 2️⃣ Verify JWT — throws if expired or invalid
+    const decoded = jwt.verify(token, jwtConfig.secret, {
+      algorithms: [jwtConfig.algorithm || 'HS256'],
+      issuer: jwtConfig.issuer,
+      audience: jwtConfig.audience,
+    });
 
-      // 4. Token is valid and user exists: Move to the next middleware/controller
-      next(); 
+    // 3️⃣ Fetch user and attach to request
+    const user = await User.findById(decoded.id).select('-password');
 
-    } catch (error) {
-      // Catches token errors (expired, invalid signature, malformed)
-      console.error('JWT Verification Failed:', error.message);
-      return res.status(401).json({ message: 'Not authorized, token invalid or expired' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found or deleted.' });
     }
-  } else {
-    // No token found in the header
-    return res.status(401).json({ message: 'Not authorized, no token provided' });
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('❌ JWT verification error:', error.message);
+    const isExpired = error.name === 'TokenExpiredError';
+    res.status(401).json({
+      message: isExpired
+        ? 'Token expired. Please log in again.'
+        : 'Invalid or malformed token.',
+    });
   }
 });
 
-// Export the function for use in routes
-export { protect };
+/**
+ * Role‑based Access Control (optional)
+ * Allows certain actions only for specified roles (e.g. admin)
+ */
+export const authorize =
+  (...roles) =>
+  (req, res, next) => {
+    if (!roles.includes(req.user?.role)) {
+      return res
+        .status(403)
+        .json({ message: 'Access denied: insufficient permissions.' });
+    }
+    next();
+  };

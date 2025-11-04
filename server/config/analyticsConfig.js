@@ -1,34 +1,48 @@
-// server/config/analyticsConfig.js
-import dotenv from "dotenv";
+/**
+ * Analytics Configuration
+ * ------------------------------------------------------
+ * Centralized config for analytics and metrics operations.
+ * Supports multiple providers (e.g. internal, Mixpanel, GA4).
+ */
+
+import dotenv from 'dotenv';
 dotenv.config();
 
-/**
- * Centralized configuration for analytics events.
- * Defines tracking modes, retention, and service API keys.
- */
-const retentionDays = parseInt(process.env.ANALYTICS_RETENTION_DAYS || "90");
-const flushInterval = parseInt(process.env.ANALYTICS_FLUSH_INTERVAL_MS || "60000");
+// Parse numeric environment variables safely
+const retentionDays = Number(process.env.ANALYTICS_RETENTION_DAYS || 90);
+const flushIntervalMs = Number(process.env.ANALYTICS_FLUSH_INTERVAL_MS || 60000);
 
+// Main configuration object
 export const analyticsConfig = {
-  // Core Settings
-  ENABLED: process.env.ANALYTICS_ENABLED === "true",
-  PROVIDER: process.env.ANALYTICS_PROVIDER || "internal", // internal | mixpanel | google
+  ENABLED: process.env.ANALYTICS_ENABLED === 'true',
+  PROVIDER: process.env.ANALYTICS_PROVIDER || 'internal', // internal | mixpanel | google
 
-  // Data Management
-  // Ensure the parsed values are valid numbers, otherwise default to a safe value.
-  RETENTION_DAYS: isNaN(retentionDays) ? 90 : retentionDays,
-  FLUSH_INTERVAL_MS: isNaN(flushInterval) ? 60000 : flushInterval, // Default to 1 min
+  // Use validated values or safe fallbacks
+  RETENTION_DAYS: Number.isFinite(retentionDays) ? retentionDays : 90,
+  FLUSH_INTERVAL_MS: Number.isFinite(flushIntervalMs) ? flushIntervalMs : 60000,
 
-  // API Key for external providers (e.g., Mixpanel, Google Analytics)
-  API_KEY: process.env.ANALYTICS_API_KEY || "",
+  // External provider API keys (kept blank for internal analytics)
+  API_KEY: process.env.ANALYTICS_API_KEY?.trim() || '',
+
+  // Optional Google Analytics project ID
+  PROJECT_ID: process.env.ANALYTICS_PROJECT_ID || null,
 };
 
-// Optional: Log a warning if enabled but the API key is missing for external providers
-if (analyticsConfig.ENABLED && 
-    analyticsConfig.PROVIDER !== 'internal' && 
-    !analyticsConfig.API_KEY) {
-    console.warn(`WARNING: Analytics is ENABLED for provider '${analyticsConfig.PROVIDER}', but ANALYTICS_API_KEY is missing.`);
+// Warn if analytics enabled but misconfigured
+if (
+  analyticsConfig.ENABLED &&
+  analyticsConfig.PROVIDER !== 'internal' &&
+  !analyticsConfig.API_KEY
+) {
+  console.warn(
+    `⚠️  Analytics is ENABLED for provider '${analyticsConfig.PROVIDER}', but ANALYTICS_API_KEY is missing.`,
+  );
 }
 
+if (analyticsConfig.ENABLED) {
+  console.log(
+    `📊 Analytics initialized (${analyticsConfig.PROVIDER}) | Retention: ${analyticsConfig.RETENTION_DAYS} days | Flush: ${analyticsConfig.FLUSH_INTERVAL_MS} ms`,
+  );
+}
 
 export default analyticsConfig;

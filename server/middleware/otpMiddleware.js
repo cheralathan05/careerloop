@@ -1,35 +1,38 @@
-import asyncHandler from 'express-async-handler'; // FIX 1: Changed require to import
-import OTPModel from '../models/OTP.js'; // CRITICAL FIX 2: Default import for Mongoose model
-
 /**
- * @desc Middleware to validate OTP format and existence before verification.
- * This runs before the controller to check for basic errors and model existence.
+ * OTP Validation Middleware
+ * ------------------------------------------------------
+ * Pre‑verification middleware to validate an OTP for a given email.
+ * Checks presence, numeric format, and model existence before controller logic.
  */
-export const validateOtp = asyncHandler(async (req, res, next) => { // FIX 3: Changed to ESM named export
-    // Ensure email and otp are trimmed early
-    const email = req.body.email ? req.body.email.toLowerCase().trim() : '';
-    const otp = req.body.otp ? req.body.otp.toString().trim() : '';
-    
-    if (!email || !otp) {
-        return res.status(400).json({ message: 'Email and OTP are required.' });
-    }
 
-    // Basic format validation: must be 6-digit numeric
-    if (otp.length !== 6 || isNaN(otp)) {
-        return res.status(400).json({ message: 'Invalid OTP format. Must be a 6-digit number.' });
-    }
+import asyncHandler from 'express-async-handler';
+import OTPModel from '../models/OTP.js';
 
-    // Check OTP existence (TTL index in model handles expiry)
-    // CRITICAL FIX: Using OTPModel (default import) instead of the old CJS reference.
-    const otpRecord = await OTPModel.findOne({ email, otp });
+export const validateOtp = asyncHandler(async (req, res, next) => {
+  // 1️⃣ Normalize and sanitize user input
+  const email = req.body?.email?.toLowerCase().trim() || '';
+  const otp = req.body?.otp?.toString().trim() || '';
 
-    if (!otpRecord) {
-        // Generic message to avoid account enumeration
-        return res.status(400).json({ message: 'Invalid or expired OTP.' });
-    }
+  if (!email || !otp) {
+    return res.status(400).json({ message: 'Email and OTP are required.' });
+  }
 
-    // OTP exists and is valid (not expired by TTL index)
-    next();
+  // 2️⃣ Format validation — must be strict 6‑digit numeric
+  const otpRegex = /^\d{6}$/;
+  if (!otpRegex.test(otp)) {
+    return res.status(400).json({ message: 'Invalid OTP format. Must be a 6‑digit number.' });
+  }
+
+  // 3️⃣ Model existence + TTL validation
+  const otpRecord = await OTPModel.findOne({ email, otp });
+
+  if (!otpRecord) {
+    // Generic response avoids user enumeration attacks
+    return res.status(400).json({ message: 'Invalid or expired OTP.' });
+  }
+
+  // 4️⃣ If valid, attach OTP doc to req context for downstream logic (optional)
+  req.verifiedOtp = otpRecord;
+
+  next();
 });
-
-// Remove module.exports

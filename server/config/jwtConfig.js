@@ -1,27 +1,44 @@
-// server/config/jwtConfig.js (ES Module format)
-import dotenv from "dotenv";
+/**
+ * JSON Web Token Configuration
+ * -----------------------------------------------------
+ * Manages JWT secret key, expiration duration, and security checks.
+ * Follows 2025 Node.js authentication best practices.
+ */
+
+import dotenv from 'dotenv';
 dotenv.config();
 
-/**
- * Configuration for JSON Web Tokens (JWT).
- */
 export const jwtConfig = {
-  // CRITICAL: Fetches the secret key from environment variables.
-  // Using a strong default is safer than an empty string, but a warning is needed.
-  secret: process.env.JWT_SECRET,
-  
-  // Defines the token's lifetime (e.g., '7d', '1h', '30m')
-  expiresIn: process.env.JWT_EXPIRES_IN || '7d', 
+  // Secret key used to sign tokens
+  secret: process.env.JWT_SECRET?.trim(),
+
+  // Token expiration (default: 7 days)
+  expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+
+  // Optional configuration — advanced validation fields
+  algorithm: 'HS256', // Recommended symmetric algorithm
+  issuer: process.env.JWT_ISSUER || 'careerloop-auth-service',
+  audience: process.env.JWT_AUDIENCE || 'careerloop-client',
 };
 
-// CRITICAL: Safety Check
-if (!jwtConfig.secret || jwtConfig.secret === 'default_jwt_secret') {
-    console.warn("⚠️ WARNING: JWT_SECRET is missing or using the default. Use a strong, unique secret in your .env file for security.");
-    // In a real application, you should enforce a strong, random secret.
-    if (!jwtConfig.secret) {
-        // Fallback to a placeholder secret if not defined, but logging the error is key.
-        jwtConfig.secret = 'default_jwt_secret_placeholder'; 
-    }
+// 1️⃣ Security: Ensure secret is defined and strong
+if (!jwtConfig.secret) {
+  console.error(
+    '❌ FATAL: Missing JWT_SECRET in environment variables.\n' +
+      '➡️  Generate a new strong secret using:\n' +
+      '   node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"'
+  );
+  // Terminate process to prevent insecure startup
+  process.exit(1);
+}
+
+// 2️⃣ Warn if fallback / test secret detected
+if (jwtConfig.secret.length < 32) {
+  console.warn(
+    '⚠️ WARNING: JWT_SECRET appears weak (<32 chars). Use a randomly generated 64‑byte value for production.'
+  );
+} else {
+  console.log(`🔐 JWT configured successfully | Expiration: ${jwtConfig.expiresIn}`);
 }
 
 export default jwtConfig;

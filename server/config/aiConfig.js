@@ -1,32 +1,43 @@
-// server/config/aiConfig.js
 /**
- * Configuration settings for the AI service (Google Gemini).
+ * AI Configuration — Google Gemini API
+ * ------------------------------------------------------
+ * This module defines configuration and validation
+ * for connecting with Google's Generative AI models.
  */
+
+import dotenv from 'dotenv';
+dotenv.config(); // Ensure environment variables are loaded early
+
 export const aiConfig = {
-  // General Provider Info
   provider: 'gemini',
-  
-  // Model Configuration
-  model: 'gemini-1.5-flash', 
-  // Note: 'gemini-1.5-pro' is available for more complex tasks.
-  
-  // API Endpoint
-  // This endpoint is general, but the actual URL for API calls will often 
-  // be managed by the SDK or constructed with the model name.
-  apiUrl: 'https://generativelanguage.googleapis.com/v1beta', 
-  
-  // Security
-  // Retrieves the key from the environment. Throws an error if not found 
-  // for early failure detection.
-  apiKey: process.env.GEMINI_API_KEY,
+
+  // Default model setup
+  model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+
+  // API endpoint ("v1beta" used for Gemini v1/v2)
+  apiUrl: 'https://generativelanguage.googleapis.com/v1beta',
+
+  // Secure API key from environment
+  apiKey: process.env.GEMINI_API_KEY?.trim(),
+
+  // Timeout (in ms)
+  timeout: Number(process.env.GEMINI_TIMEOUT || 30000),
+
+  // Feature toggles for development
+  enable: process.env.ENABLE_GEMINI === 'true',
 };
 
-// Optional: Add a check for the API Key to ensure the server doesn't start without it
-if (!aiConfig.apiKey) {
-    console.error("FATAL ERROR: GEMINI_API_KEY is not set in environment variables.");
-    // In a production server, you might want to stop the process here:
-    // process.exit(1); 
+// --------- Validation Section ---------
+if (!aiConfig.apiKey && aiConfig.enable) {
+  console.error(
+    '❌ FATAL ERROR: GEMINI_API_KEY is not set in environment variables.\n' +
+      '→ Fix: Add GEMINI_API_KEY to your .env file before starting the server.'
+  );
+  process.exit(1); // Prevent accidental server start without credentials
 }
 
-// Default export for easier integration
+if (aiConfig.enable) {
+  console.log(`🤖 Gemini AI initialized: ${aiConfig.model}`);
+}
+
 export default aiConfig;

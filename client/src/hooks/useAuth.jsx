@@ -1,132 +1,91 @@
+// src/hooks/useAuth.jsx (FINAL, SECURE VERSION)
+
 import { useContext, useState, useCallback, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
-// FIX 1: Import the dedicated authService functions instead of the generic apiClient
+// Assuming authService contains: login(credentials), register(data), logout() (POST /auth/logout)
 import authService from '../api/authService'; 
-import { showToast } from '../utils/toastNotifications'; // Added for user feedback
+import { showToast } from '../utils/toastNotifications';
 
 /**
  * Custom hook to manage all authentication-related actions and state.
  * This hook connects the API service layer (authService) to the global state (AuthContext).
  */
 const useAuth = () => {
-    // Attempt to use the global context provided by AuthProvider
+    // CRITICAL: The consumer must always rely on the context for state
     const context = useContext(AuthContext);
 
-    // --- Local State (Used if Context isn't provided/for fallback) ---
-    // FIX 2: Check for 'accessToken' key
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('accessToken'));
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
-    
-    // --- State Management Helpers (used by local logic) ---
+    // --- Core Logic Functions (APIs) ---
 
-    // Function to save token and user data upon successful authentication
-    const saveAuthData = useCallback((token, userData) => {
-        // FIX 3: Use the standardized key 'accessToken'
-        localStorage.setItem('accessToken', token); 
-        localStorage.setItem('user', JSON.stringify(userData));
-        setIsAuthenticated(true);
-        setUser(userData);
-        setError(null);
-        showToast('Login successful!', 'success');
-    }, []);
-
-    // Function to clear all local authentication data
-    const clearAuthData = useCallback(() => {
-        // FIX 4: Use the standardized key 'accessToken'
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('user');
-        setIsAuthenticated(false);
-        setUser(null);
-        setError(null);
-    }, []);
-
-    // --- Effects & Initialization ---
-    
-    // Use useEffect to check token on mount and attempt to load user data
-    useEffect(() => {
-        // Only run local initialization if the hook is running outside the Provider (i.e., context is null)
-        if (!context) { 
-            const token = localStorage.getItem('accessToken');
-            const storedUser = localStorage.getItem('user');
-            
-            if (token && storedUser) {
-                // Initialize local state from storage
-                try {
-                    setUser(JSON.parse(storedUser));
-                    setIsAuthenticated(true);
-                } catch (e) {
-                    console.error("Corrupted user data in local storage:", e);
-                    clearAuthData(); // Clear corrupt data
-                }
-            }
-            setLoading(false); // Assume initial check is done
-        }
-    }, [context, clearAuthData]);
-
-    // --- Core Auth Logic ---
-
+    // Login (Phase 2)
     const login = useCallback(async (credentials) => {
-        setLoading(true);
-        setError(null);
+        context.setLoading(true); // Assuming context provides setLoading
+        context.setError(null);
         try {
-            // FIX 5: Use the imported authService.login function
+            // CRITICAL FIX: The backend sets the HTTP-only cookie.
+            // This API call just sends credentials and receives user data + sets the cookie.
             const response = await authService.login(credentials); 
             
-            // If the context is available, use its saveAuthData function (which is passed via props)
-            if (context?.saveAuthData) {
-                context.saveAuthData(response.token, response.user || response.data);
+            // Phase 6: Run the full status check to update global state based on the new cookie
+            const authResult = await context.checkAuthStatus();
+            
+            if (authResult.success) {
+                // The context's saveAuthData is called internally by checkAuthStatus 
+                // OR it can be called here directly with the user data:
+                // context.saveAuthData(response.data); 
+                showToast('Login successful!', 'success');
+                return authResult.user; 
             } else {
-                // Otherwise, use the local one
-                saveAuthData(response.token, response.user || response.data);
+                throw new Error('Server validation failed after successful login call.');
             }
-            return response.user || response.data; // Return user object for component use
+
         } catch (err) {
-            const msg = err.message || 'Login failed.';
-            setError(msg);
+            const msg = err.response?.data?.message || err.message || 'Login failed.';
+            context.setError(msg);
             showToast(msg, 'error');
             throw err;
         } finally {
-            setLoading(false);
+            context.setLoading(false);
         }
-    // Dependency: Include context and context functions if available, or local functions
-    }, [context, context?.saveAuthData, saveAuthData]);
+    }, [context]);
 
+    // Logout (Phase 6)
     const logout = useCallback(async () => {
-        setLoading(true);
+        context.setLoading(true);
         try {
-            // FIX 6: Call the server-side logout function from authService
+            // CRITICAL FIX: Call the server-side logout function (POST /auth/logout)
+            // The backend clears the HTTP-only cookie here.
             await authService.logout(); 
             showToast('Logged out successfully.', 'info');
         } catch (err) {
-            console.warn("Logout failed on server, clearing client state anyway.", err.message);
+            // We ignore server-side errors on logout and prioritize client state reset
+            console.warn("Logout server call failed (session may already be cleared):", err.message);
         } finally {
-            // Clear client state regardless of server response
-            if (context?.logout) {
-                context.logout(); // Context's logout also clears local storage
-            } else {
-                clearAuthData(); // Local clear
-            }
-            setLoading(false);
+            // CRITICAL FIX: Clear client state (user=null, isAuthenticated=false)
+            context.logout(); 
+            context.setLoading(false);
         }
-    }, [context, context?.logout, clearAuthData]);
-
-    // --- Return Value ---
+    }, [context]);
     
-    // If AuthContext is defined, return the context value (this is the desired state). 
-    if (context) {
-        return { 
-            ...context, 
-            login, // Override context's placeholder login with the actual logic
-            logout, // Override context's placeholder logout with the actual logic
-            // The context state (user, isAuthenticated, loading) is used directly
-        };
+    // --- Hook Return Value ---
+
+    // CRITICAL FIX: The hook should only return the context value, 
+    // overriding the login/logout placeholders with the real logic.
+    if (!context) {
+        // This should not happen if App.jsx is structured correctly
+        throw new Error("useAuth must be used within an AuthProvider");
     }
 
-    // Otherwise, return local state/functions (fallback)
-    return { user, isAuthenticated, loading, error, login, logout, saveAuthData, setError };
+    return { 
+        ...context, // user, isAuthenticated, loading, checkAuthStatus, saveAuthData, setError
+        login,      // Override login placeholder
+        logout,     // Override logout placeholder
+        // Note: register, forgotPassword, etc., should be added here
+        register: authService.register,
+        forgotPassword: authService.forgotPassword,
+        resetPassword: authService.resetPassword,
+        sendOtp: authService.sendOtp,
+        verifyOtp: authService.verifyOtp,
+    };
 };
 
 export default useAuth;
-

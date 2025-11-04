@@ -1,51 +1,66 @@
-// server/controllers/mentorController.js
-const asyncHandler = require('express-async-handler');
-const Mentor = require('../models/Mentor');
-const { success } = require('../utils/responseHandler'); // Assuming this utility exists
+/**
+ * Mentor Controller
+ * ------------------------------------------------------
+ * Handles mentor listing, search, and filtering by domain.
+ * Uses modern async/await, safe input handling, and consistent API responses.
+ */
+
+import Mentor from '../models/Mentor.js';
+import { success } from '../utils/responseHandler.js';
 
 /**
- * @desc Lists mentors with optional text search and basic filtering/pagination.
+ * @desc Lists mentors with optional text search, filtering, and pagination
  * @route GET /api/mentors
  * @access Public
  */
-exports.list = asyncHandler(async (req, res) => {
-    // --- 1. Get Query Parameters ---
-    const { 
-        q, 
-        limit = 50, 
-        skip = 0,
-        domain // e.g., ?domain=software
-    } = req.query; 
+export const list = async (req, res) => {
+  try {
+    // 1️⃣ Extract and sanitize query parameters
+    const {
+      q = '',
+      domain,
+      limit = 50,
+      skip = 0,
+      sort = 'name', // Default sort field
+      order = 'asc', // asc | desc
+    } = req.query;
 
-    // --- 2. Build the MongoDB Query Object ---
-    let query = {};
-    let sortOptions = { name: 1 }; // Default sort by name
+    const maxLimit = Math.min(parseInt(limit, 10) || 50, 100); // hard cap: 100
+    const offset = Math.max(parseInt(skip, 10) || 0, 0);
 
-    if (domain) {
-        // Add domain filtering (assuming 'domain' is a field in your Mentor model)
-        query.domain = domain; 
-    }
+    // 2️⃣ Build MongoDB query dynamically
+    const query = {};
+    if (domain) query.domain = domain.trim();
+    if (q) query.$text = { $search: q.trim() };
 
-    if (q) {
-        // Use $text search operator
-        query.$text = { $search: q };
-        // When using $text, MongoDB provides a score we can sort by
-        sortOptions = { score: { $meta: 'textScore' } };
-    }
+    // 3️⃣ Define sorting logic
+    const sortOptions =
+      q && !sort ? { score: { $meta: 'textScore' } } : { [sort]: order === 'desc' ? -1 : 1 };
 
-    // --- 3. Execute the Query ---
+    // 4️⃣ Execute query with optional textScore projection
     const mentors = await Mentor.find(query)
-        .select('-__v') // Exclude Mongoose version key
-        .limit(parseInt(limit))
-        .skip(parseInt(skip))
-        .sort(sortOptions)
-        // If a text search was performed, project the score to see how results are ranked
-        .lean(); 
+      .select(q ? { score: { $meta: 'textScore' } } : '-__v')
+      .limit(maxLimit)
+      .skip(offset)
+      .sort(sortOptions)
+      .lean();
 
-    // --- 4. Return Response ---
+    // 5️⃣ Get total count for pagination metadata
+    const total = await Mentor.countDocuments(query);
+
+    // 6️⃣ Use standardized response
     success(res, 200, {
-        count: mentors.length,
-        total: await Mentor.countDocuments(query), // Optional: for client-side pagination
-        mentors: mentors 
+      total,
+      count: mentors.length,
+      pageSize: maxLimit,
+      pageOffset: offset,
+      mentors,
     });
-});
+  } catch (error) {
+    console.error('❌ Mentor listing failed:', error.message);
+    res.status(500).json({
+      message: 'Failed to fetch mentor list.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};

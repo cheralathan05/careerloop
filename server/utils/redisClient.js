@@ -2,7 +2,7 @@
 
 // 1. Convert require to import
 import Redis from 'ioredis';
-import { url } from '../config/redisCache.js'; // Added .js extension
+import { url } from '../config/redisConfig.js'; // Added .js extension
 
 let client = null;
 

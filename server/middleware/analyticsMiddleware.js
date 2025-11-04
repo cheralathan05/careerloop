@@ -1,50 +1,57 @@
-// server/middleware/analyticsMiddleware.js (ES Module format)
+/**
+ * Analytics Tracking Middleware
+ * ------------------------------------------------------
+ * Detects and logs events provided by the client for analytics purposes.
+ * Uses a non-blocking design so as not to delay primary API responses.
+ */
 
-// Import the central service we defined earlier
-import analyticsService from '../services/analyticsService.js'; 
-// Use an import for the model/async handler if needed, but the service handles it.
+import analyticsService from '../services/analyticsService.js';
 
 /**
- * Lightweight middleware to detect and track events provided in the request body.
- * Assumes a key like '_trackEvent' exists in the body.
+ * Middleware entry point
+ * Detects special tracking fields (_trackEvent, _trackPayload) in the request body.
  */
-export default async (req, res, next) => {
-    
-    // Check if the service is available and configured
-    if (!analyticsService || typeof analyticsService.track !== 'function') {
-        // If the service is missing or disabled, quietly skip tracking
-        return next(); 
+export default async function analyticsMiddleware(req, res, next) {
+  // 1️⃣ Skip if analytics is not active or uninitialized
+  if (!analyticsService || typeof analyticsService.track !== 'function') {
+    return next();
+  }
+
+  try {
+    const { _trackEvent, _trackPayload, ...restBody } = req.body || {};
+    const userId = req.user?.id;
+    const requestMeta = {
+      userId,
+      method: req.method,
+      path: req.originalUrl,
+      ip: req.ip,
+      ua: req.headers['user-agent'],
+      ts: new Date().toISOString(),
+    };
+
+    // 2️⃣ Detect tracking event
+    if (_trackEvent) {
+      const eventType = String(_trackEvent).trim();
+
+      // Defensive copy of payload for safety
+      const eventPayload = Object.assign({}, _trackPayload || {}, requestMeta);
+
+      // 3️⃣ Non-blocking async log (background fire‑and‑forget)
+      queueMicrotask(() => {
+        analyticsService
+          .track(eventType, eventPayload)
+          .catch((err) =>
+            console.warn(`⚠️ Analytics tracking failed: ${err.message}`)
+          );
+      });
     }
 
-    try {
-        const userId = req.user?.id;
-        const body = req.body;
-        
-        // Check for the client-provided event fields in the body
-        if (body && body._trackEvent) {
-            
-            const eventType = body._trackEvent;
-            const eventPayload = {
-                ...body._trackPayload, // Custom payload from the client
-                // Add server-side context
-                userId: userId, 
-                method: req.method,
-                path: req.originalUrl,
-                ip: req.ip
-            };
-            
-            // Log the event using the central service. 
-            // We do NOT await this to ensure it doesn't slow down the main API response.
-            analyticsService.track(eventType, eventPayload);
-            
-            // Optional: Remove tracking fields from the body before it hits the controller
-            delete body._trackEvent;
-            delete body._trackPayload;
-        }
-    } catch (err) {
-        // Use console.warn for non-critical failures
-        console.warn('Analytics middleware failed during tracking:', err.message);
-    }
-    
-    next();
-};
+    // 4️⃣ Clean up body before passing to controller to prevent misuse
+    req.body = restBody;
+  } catch (err) {
+    console.warn('⚠️ Analytics middleware error:', err.message);
+  }
+
+  // 5️⃣ Always continue chain regardless of analytics state
+  next();
+}

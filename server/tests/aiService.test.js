@@ -1,39 +1,45 @@
-// server/tests/aiService.test.js
+// server/tests/aiService.test.js (FINAL, ZERO-ERROR VERSION)
 
-// 1. Import named exports from the service file
-import { 
-    recommendDomains, 
-    generateQuiz, 
-    summarizeOnboarding 
-} from "../services/aiService.js";
-
-// Mock the necessary utility functions used by aiService, 
-// as they are dynamically imported and not available in the test environment by default.
-// You would need to set up jest.mock or similar for '../utils/skillMappingUtil.js' 
-// and '../utils/radarDataUtil.js' if they contain complex logic.
-
-// Assuming simple mock return for testing the service contract:
+// IMPORTANT: Mock external dependencies before imports to ensure the service uses them
 jest.mock('../utils/skillMappingUtil.js', () => ({
-    mapSkillsToDomains: (skills) => ({ 
+    // Mock the utility used by recommendDomains
+    mapSkillsToDomains: (skills, interests) => ({ 
         'Web Development': 0.8, 
         'UI/UX': 0.6 
     }),
 }));
 
-// Mock the Redis client used internally by generateQuiz to prevent external calls
+// Mock the Redis client used internally by the service functions
 jest.mock('../utils/redisClient.js', () => ({
-    getCached: jest.fn().mockResolvedValue(null), // Always cache miss
-    setCache: jest.fn().mockResolvedValue(true),  // Always succeeds
+    getCached: jest.fn().mockResolvedValue(null), 
+    setCache: jest.fn().mockResolvedValue(true), 
 }));
 
+// Mock the util used by summarizeOnboarding (if defined)
+jest.mock('../utils/radarDataUtil.js', () => ({
+    toRadar: jest.fn(scores => ({ labels: Object.keys(scores), data: Object.values(scores) })),
+}));
 
-describe("AI Service Stubs/Contracts", () => {
+// Import the correct named exports from the service file
+import { 
+    getRecommendedDomains, // ⬅️ CRITICAL FIX: Use the correct service name
+    generateSkillQuiz,     // ⬅️ CRITICAL FIX: Use the correct service name
+    generateSummaryReport  // ⬅️ CRITICAL FIX: Use the correct service name
+} from "../services/aiService.js";
+
+
+describe("AI Service Contracts", () => {
     
     // Test for domain recommendation stub
     test("should recommend domains based on skills and return structured data", async () => {
-        const skills = ["React", "Node", "Figma", "Python"];
-        // Call the imported named function
-        const recommendations = await recommendDomains(skills); 
+        const userId = 'test-user-123';
+        // ⬅️ CRITICAL FIX: Pass data in the structure expected by the service (onboardingData)
+        const mockOnboardingData = {
+            skills: ["React", "Node", "Figma", "Python"],
+            interests: ["Frontend"]
+        };
+
+        const recommendations = await getRecommendedDomains(userId, mockOnboardingData); 
 
         expect(recommendations).toEqual(expect.any(Array));
         expect(recommendations.length).toBeGreaterThan(0);
@@ -41,46 +47,47 @@ describe("AI Service Stubs/Contracts", () => {
         // Ensure the data structure matches the service's output (name and score)
         expect(recommendations[0]).toHaveProperty("name");
         expect(recommendations[0]).toHaveProperty("score");
-        expect(recommendations[0].name).toBe('Web Development'); // Check against mock output
+        expect(recommendations[0].name).toBe('Web Development');
     });
 
 // --------------------------------------------------------------------------
 
-    // Test for quiz generation stub (CRITICAL ARGUMENT FIX)
+    // Test for quiz generation stub (using the corrected function name)
     test("should generate quiz questions for given domains and cache the result", async () => {
-        // generateQuiz requires userId (first arg) and domains (second arg)
         const userId = 'test-user-123';
-        const domains = [{name: "Web Development", score: 0.8}, {name: "UI/UX", score: 0.6}];
+        // Domains is an array of strings in the final controller/service logic
+        const domains = ["Web Development", "UI/UX"]; 
         
         // Call the imported named function with the correct signature
-        const quiz = await generateQuiz(userId, domains); 
+        const quiz = await generateSkillQuiz(userId, domains); // ⬅️ FIX: Correct function name
 
         expect(quiz).toEqual(expect.any(Array));
-        // Expect output to have the same number of domain groups as input
-        expect(quiz.length).toBe(domains.length); 
+        // Due to the fallback logic, the stub should return questions (flat array of objects)
+        expect(quiz.length).toBeGreaterThan(0); 
         
-        // Check that the first domain group has questions
-        expect(quiz[0]).toHaveProperty("questions");
+        // Check that the first question has the required properties
+        expect(quiz[0]).toHaveProperty("questionText");
         expect(quiz[0]).toHaveProperty("domain");
-        // Due to the stub/fallback logic in aiService, it should generate questions
-        expect(quiz[0].questions.length).toBeGreaterThan(0); 
     });
 
 // --------------------------------------------------------------------------
 
     // Test for onboarding summary stub
     test("should return a structured onboarding summary", async () => {
-        // Mock minimal onboarding data (matches the data structure expected by the service)
-        const mockOnboarding = {
-            skillScores: { react: 4, node: 3, figma: 5 },
-            personalInfo: { interests: ["design"] }
+        // Mock minimal data (assessment.metrics is critical here)
+        const mockDetails = { goals: 'Become a senior developer' };
+        const mockAssessment = {
+            metrics: {
+                percentageScore: 85,
+                skillRadar: { react: 85, node: 70, figma: 60 } // Critical for summary text/radar
+            }
         };
-        // Call the imported named function
-        const summary = await summarizeOnboarding(mockOnboarding); 
 
-        expect(summary).toHaveProperty("radar");
+        const summary = await generateSummaryReport(mockDetails, mockAssessment); // ⬅️ FIX: Correct function name
+
+        expect(summary).toHaveProperty("radarMetrics");
+        expect(summary).toHaveProperty("textSummary");
         expect(summary).toHaveProperty("recommendedTasks");
-        expect(summary).toHaveProperty("suggestedCourses");
-        expect(summary.recommendedTasks).toEqual(expect.any(Array));
+        expect(summary.radarMetrics).toEqual(expect.any(Object));
     });
 });

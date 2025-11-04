@@ -1,51 +1,59 @@
-// server/controllers/analyticsController.js
-const asyncHandler = require('express-async-handler');
-// 1. Import the central Analytics Service instead of the model
-const analyticsService = require('../services/analyticsService'); 
-// Assuming the service exposes a 'track' function
-const { success } = require('../utils/responseHandler'); 
-const AnalyticsEvent = require('../models/AnalyticsEvent'); // Keep the model for getEvents
+/**
+ * Analytics Controller
+ * ------------------------------------------------------
+ * Tracks and retrieves analytics events via the centralized service layer.
+ * Compatible with Express 5 native async error handling.
+ */
+
+import analyticsService from '../services/analyticsService.js';
+import AnalyticsEvent from '../models/AnalyticsEvent.js';
+import { success } from '../utils/responseHandler.js';
 
 /**
- * @desc Tracks an event using the configured analytics provider.
+ * @desc Track an analytics event.
  * @route POST /api/analytics/track
- * @access Public/Authenticated (Depending on your requirements)
+ * @access Public / Authenticated (configurable)
  */
-exports.track = asyncHandler(async (req, res) => {
-    const { type, payload } = req.body;
-    // Get user ID from the request, usually added by a preceding middleware
-    const userId = req.user?.id || null; 
+export const track = async (req, res) => {
+  const { type, payload } = req.body;
+  const userId = req.user?.id || null;
 
-    if (!type) {
-        return res.status(400).json({ message: 'Event type is required.' });
-    }
+  if (!type || typeof type !== 'string') {
+    return res.status(400).json({ message: 'Event type is required.' });
+  }
 
-    // 2. Use the central service to track the event
-    // The service internally decides whether to log to DB, send to Mixpanel, or do nothing.
-    analyticsService.track(type, { 
-        ...payload, 
-        userId: userId,
-        // Add more context like IP, user agent, etc., here or in a middleware
+  try {
+    // Pass to service layer (DB, Mixpanel, or internal)
+    await analyticsService.track(type, {
+      ...payload,
+      userId,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
     });
 
-    // 3. Return a successful, immediate response
-    // We don't need to wait for the database interaction or external API call to finish
-    // unless you specifically need the result object for the client.
+    // Return immediately (async fire-and-forget pattern)
     success(res, 200, { message: 'Analytics event accepted.' });
-});
+  } catch (error) {
+    console.error('❌ Analytics tracking failed:', error.message);
+    res.status(500).json({ message: 'Failed to record event.', error: error.message });
+  }
+};
 
 /**
- * @desc Retrieves the latest stored analytics events (for admin/internal use).
+ * @desc Retrieve recent analytics events (admin/internal-only)
  * @route GET /api/analytics/events
- * @access Private/Admin
+ * @access Private / Admin
  */
-exports.getEvents = asyncHandler(async (req, res) => {
-    // This function still needs direct DB access if it's meant to retrieve internal logs.
-    // We assume the service only handles tracking, not retrieval.
+export const getEvents = async (req, res) => {
+  try {
     const events = await AnalyticsEvent.find()
-        .sort({ createdAt: -1 })
-        .limit(100)
-        .select('-__v'); // Exclude the Mongoose version key
-        
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .select('-__v');
+
     success(res, 200, { count: events.length, events });
-});
+  } catch (error) {
+    console.error('❌ Failed to fetch analytics events:', error.message);
+    res.status(500).json({ message: 'Unable to fetch analytics logs.' });
+  }
+};
