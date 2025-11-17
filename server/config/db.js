@@ -37,11 +37,7 @@ const connectDB = async () => {
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 
     // 3️⃣ Graceful shutdown for process kill/interruption
-    process.on('SIGINT', async () => {
-      await mongoose.connection.close();
-      console.log('💤 MongoDB connection closed (SIGINT).');
-      process.exit(0);
-    });
+
 
     process.on('SIGTERM', async () => {
       await mongoose.connection.close();
