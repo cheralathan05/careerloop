@@ -6,7 +6,6 @@
 import aiConfig from '../config/aiConfig.js'; 
 import * as redisClient from '../utils/redisClient.js'; // Access as redisClient.getCached
 import axios from 'axios'; // For external API calls
-import aiService from '../services/aiService.js';
 
 // =========================================================================
 // 1. RECOMMEND DOMAINS (Local Stub)

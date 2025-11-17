@@ -4,8 +4,8 @@
  * Handles recommendation queries by domain (public or authenticated route).
  * Follows MVC + service-layer architecture principles.
  */
-
-import courseService from '../services/courseSuggestionService.js';
+// In courseController.js
+import * as courseService from '../services/courseSuggestionService.js';
 import { success } from '../utils/responseHandler.js';
 
 /**

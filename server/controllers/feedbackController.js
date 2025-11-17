@@ -6,7 +6,8 @@
  * Follows clean controller principles and async/await practices.
  */
 
-import feedbackService from '../services/feedbackService.js';
+// In feedbackController.js
+import * as feedbackService from '../services/feedbackService.js';
 import { success } from '../utils/responseHandler.js';
 
 /**

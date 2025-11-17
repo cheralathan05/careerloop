@@ -6,7 +6,8 @@
  * error propagation — no need for express-async-handler.
  */
 
-import aiService from '../services/aiService.js';
+// In aiController.js
+import * as aiService from '../services/aiService.js';
 import { success } from '../utils/responseHandler.js';
 
 /**

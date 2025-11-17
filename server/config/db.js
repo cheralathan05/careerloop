@@ -1,7 +1,7 @@
 /**
  * MongoDB Connection — Mongoose (ES Module Version)
  * ------------------------------------------------------
- * Ensures secure, performant, and fault‑tolerant connection lifecycle
+ * Ensures secure, performant, and fault-tolerant connection lifecycle
  * for both local and cloud (Atlas) deployments.
  */
 
@@ -30,9 +30,8 @@ const connectDB = async () => {
       maxPoolSize: 10, // Maximum concurrent connections per app instance
       minPoolSize: 1, // Maintain minimum idle connections
       autoIndex: true, // Build indexes automatically (only for dev)
-      keepAlive: true, // Prevent timeouts due to idle connections
-      keepAliveInitialDelay: 300000, // 5 minutes
-      family: 4, // Force IPv4 to avoid dual‑stack DNS latency
+      // family: 4, // Force IPv4 to avoid dual-stack DNS latency
+      // <-- keepAlive and keepAliveInitialDelay options were removed.
     });
 
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
