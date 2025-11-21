@@ -8,6 +8,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Parse numeric environment variables safely
+const retentionDays = Number(process.env.ANALYTICS_RETENTION_DAYS || 90);
+const flushIntervalMs = Number(process.env.ANALYTICS_FLUSH_INTERVAL_MS || 80000);
 
 // Main configuration object
 export const analyticsConfig = {
