@@ -34,7 +34,11 @@ if (
   analyticsConfig.PROVIDER !== 'internal' &&
   !analyticsConfig.API_KEY
 ) {
- 
+  console.warn(
+    `⚠️  Analytics is ENABLED for provider '${analyticsConfig.PROVIDER}', but ANALYTICS_API_KEY is missing.`,
+  );
+}
+
 if (analyticsConfig.ENABLED) {
   console.log(
     `📊 Analytics initialized (${analyticsConfig.PROVIDER}) | Retention: ${analyticsConfig.RETENTION_DAYS} days | Flush: ${analyticsConfig.FLUSH_INTERVAL_MS} ms`,
