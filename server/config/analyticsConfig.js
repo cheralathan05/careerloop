@@ -39,10 +39,5 @@ if (
   );
 }
 
-if (analyticsConfig.ENABLED) {
-  console.log(
-    `📊 Analytics initialized (${analyticsConfig.PROVIDER}) | Retention: ${analyticsConfig.RETENTION_DAYS} days | Flush: ${analyticsConfig.FLUSH_INTERVAL_MS} ms`,
-  );
-}
 
 export default analyticsConfig;
