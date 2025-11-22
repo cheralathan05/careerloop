@@ -14,7 +14,7 @@ const flushIntervalMs = Number(process.env.ANALYTICS_FLUSH_INTERVAL_MS || 80000)
 
 // Main configuration object
 export const analyticsConfig = {
-  ENABLED: process.env.ANALYTICS_ENABLED === 'true',
+  ENABLED: process.env.ANALYTICS_ENABLED === 'false',
   PROVIDER: process.env.ANALYTICS_PROVIDER || 'internal', // internal | mixpanel | google
 
   // Use validated values or safe fallbacks
