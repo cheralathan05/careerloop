@@ -39,11 +39,7 @@ const connectDB = async () => {
     // 3️⃣ Graceful shutdown for process kill/interruption
 
 
-    process.on('SIGTERM', async () => {
-      await mongoose.connection.close();
-      console.log('💤 MongoDB connection closed (SIGTERM).');
-      process.exit(0);
-    });
+ 
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
 
