@@ -10,18 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * Establishes connection to MongoDB using Mongoose
- */
-const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI;
-
-  // 1️⃣ Defensive configuration check
-  if (!mongoURI) {
-    console.error('❌ FATAL: Missing environment variable MONGO_URI.');
-    process.exit(1); // Blocks startup until fixed
-  }
-
-  try {
+ * Establishe
     // 2️⃣ Mongoose options for stability and performance
     const conn = await mongoose.connect(mongoURI, {
       // MongoDB Driver Settings (safe defaults)
@@ -39,7 +28,11 @@ const connectDB = async () => {
     // 3️⃣ Graceful shutdown for process kill/interruption
 
 
- 
+    process.on('SIGTERM', async () => {
+      await mongoose.connection.close();
+      console.log('💤 MongoDB connection closed (SIGTERM).');
+      process.exit(0);
+    });
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
 
