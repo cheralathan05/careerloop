@@ -22,6 +22,13 @@ const connectDB = async () => {
   }
 
   try {
+    // 2️⃣ Mongoose options for stability and performance
+    const conn = await mongoose.connect(mongoURI, {
+      // MongoDB Driver Settings (safe defaults)
+      serverSelectionTimeoutMS: 5000, // Fail quickly if unreachable
+      socketTimeoutMS: 45000, // Socket timeout for long queries
+      maxPoolSize: 10, // Maximum concurrent connections per app instance
+      minPoolSize: 1, // Maintain minimum idle connections
       autoIndex: true, // Build indexes automatically (only for dev)
       // family: 4, // Force IPv4 to avoid dual-stack DNS latency
       // <-- keepAlive and keepAliveInitialDelay options were removed.
