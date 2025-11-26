@@ -9,11 +9,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();
 
-/**
- * Establishes connection to MongoDB using Mongoose
- */
-const connectDB = async () => {
-  const mongoURI = process.env.MONGO_URI;
+
 
   // 1️⃣ Defensive configuration check
   if (!mongoURI) {
