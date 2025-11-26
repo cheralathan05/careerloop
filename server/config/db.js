@@ -34,7 +34,9 @@ const connectDB = async () => {
       // <-- keepAlive and keepAliveInitialDelay options were removed.
     });
 
-    console.log(`✅ MongoD
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+
+    // 3️⃣ Graceful shutdown for process kill/interruption
 
 
     process.on('SIGTERM', async () => {
