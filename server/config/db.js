@@ -16,7 +16,10 @@ const connectDB = async () => {
   const mongoURI = process.env.MONGO_URI;
 
   // 1️⃣ Defensive configuration check
-
+  if (!mongoURI) {
+    console.error('❌ FATAL: Missing environment variable MONGO_URI.');
+    process.exit(1); // Blocks startup until fixed
+  }
 
   try {
     // 2️⃣ Mongoose options for stability and performance
