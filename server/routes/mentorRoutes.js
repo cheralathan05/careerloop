@@ -1,7 +1,7 @@
 // server/routes/mentorRoutes.js (FINAL, FULLY ES MODULE COMPLIANT ✅)
 
 import express from 'express';
-
+const router = express.Router();
 
 // Convert require to import 
 import * as mentorController from '../controllers/mentorController.js'; // Namespace import for controller functions
