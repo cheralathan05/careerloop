@@ -27,7 +27,15 @@ export const track = async (req, res) => {
     await analyticsService.track(type, {
       ...payload,
 
+    // Return immediately (async fire-and-forget pattern)
+    success(res, 200, { message: 'Analytics event accepted.' });
+  } catch (error) {
+    console.error('❌ Analytics tracking failed:', error.message);
+    res.status(500).json({ message: 'Failed to record event.', error: error.message });
+  }
+};
 
+/**
  * @desc Retrieve recent analytics events (admin/internal-only)
  * @route GET /api/analytics/events
  * @access Private / Admin
