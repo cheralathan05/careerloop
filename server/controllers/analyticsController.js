@@ -51,9 +51,6 @@ export const getEvents = async (req, res) => {
       .limit(100)
       .select('-__v');
 
-    success(res, 200, { count: events.length, events });
-  } catch (error) {
-    console.error('❌ Failed to fetch analytics events:', error.message);
-    res.status(500).json({ message: 'Unable to fetch analytics logs.' });
+s.status(500).json({ message: 'Unable to fetch analytics logs.' });
   }
 };
