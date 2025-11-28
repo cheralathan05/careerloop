@@ -36,17 +36,4 @@ export const track = async (req, res) => {
 };
 
 /**
- * @desc Retrieve recent analytics events (admin/internal-only)
- * @route GET /api/analytics/events
- * @access Private / Admin
- */
-export const getEvents = async (req, res) => {
-  try {
-    const events = await AnalyticsEvent.find()
-      .sort({ createdAt: -1 })
-      .limit(100)
-      .select('-__v');
-
-s.status(500).json({ message: 'Unable to fetch analytics logs.' });
-  }
-};
+ * @desc Retrieve recent \
