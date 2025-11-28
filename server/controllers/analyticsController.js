@@ -5,6 +5,12 @@
  * Compatible with Express 5 native async error handling.
  */
 
+import analyticsService from '../services/analyticsService.js';
+import AnalyticsEvent from '../models/AnalyticsEvent.js';
+import { success } from '../utils/responseHandler.js';
+
+/**
+ * @desc Track an analytics event.
  * @route POST /api/analytics/track
  * @access Public / Authenticated (configurable)
  */
