@@ -26,10 +26,6 @@ export const track = async (req, res) => {
     // Pass to service layer (DB, Mixpanel, or internal)
     await analyticsService.track(type, {
       ...payload,
-      userId,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
 
     // Return immediately (async fire-and-forget pattern)
     success(res, 200, { message: 'Analytics event accepted.' });
