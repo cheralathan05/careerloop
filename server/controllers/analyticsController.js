@@ -25,15 +25,7 @@ export const track = async (req, res) => {
   try {
     // Pass to service layer (DB, Mixpanel, or internal)
     await analyticsService.track(type, {
-      ...payload,
-      userId,
-      ip: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
-
-    // Return immediately (async fire-and-forget pattern)
-    success(res, 200, { message: 'Analytics event accepted.' });
-  } catch (error) {
+      ...pay
     console.error('❌ Analytics tracking failed:', error.message);
     res.status(500).json({ message: 'Failed to record event.', error: error.message });
   }
