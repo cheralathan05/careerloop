@@ -53,5 +53,3 @@ const connectDB = async () => {
     setTimeout(connectDB, retryDelay);
   }
 };
-
-export default connectDB;
