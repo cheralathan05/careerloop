@@ -37,19 +37,7 @@ const connectDB = async () => {
     console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
 
     // 3️⃣ Graceful shutdown for process kill/interruption
-
-
-    process.on('SIGTERM', async () => {
-      await mongoose.connection.close();
-      console.log('💤 MongoDB connection closed (SIGTERM).');
-      process.exit(0);
-    });
-  } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-
-    // 4️⃣ Resilient retry strategy for containerized/cloud environments
-    const retryDelay = 5000;
-    console.log(`🔁 Retrying Database Connection in ${retryDelay / 1000}s...`);
+tion in ${retryDelay / 1000}s...`);
     setTimeout(connectDB, retryDelay);
   }
 };
