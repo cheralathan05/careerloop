@@ -49,9 +49,3 @@ const connectDB = async () => {
 
     // 4️⃣ Resilient retry strategy for containerized/cloud environments
     const retryDelay = 5000;
-    console.log(`🔁 Retrying Database Connection in ${retryDelay / 1000}s...`);
-    setTimeout(connectDB, retryDelay);
-  }
-};
-
-export default connectDB;
