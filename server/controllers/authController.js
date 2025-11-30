@@ -152,14 +152,6 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     <p>This link expires in 15 minutes.</p>
   `;
 
-  await sendEmail({ to: email, subject: 'Password Reset Request', html: message });
-  await analyticsService.log(user._id, 'password_reset_requested', { email });
-
-  res.status(200).json({ message: 'Password reset email sent successfully!' });
-});
-
-// ====================================================
-// 🔁 RESET PASSWORD
 // ====================================================
 export const resetPassword = asyncHandler(async (req, res) => {
   const { token, newPassword } = req.body;
