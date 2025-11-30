@@ -59,8 +59,6 @@ export const list = async (req, res) => {
   } catch (error) {
     console.error('❌ Mentor listing failed:', error.message);
     res.status(500).json({
-      message: 'Failed to fetch mentor list.',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-    });
+   
   }
 };
